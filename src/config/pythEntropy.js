@@ -75,15 +75,20 @@ export const PYTH_ENTROPY_CONFIG = {
    * @returns {Object} Network configuration
    */
   getNetworkConfig(network) {
-    // Always return Arbitrum Sepolia configuration
+    // Always return Arbitrum Sepolia configuration with contractAddress
+    const config = {
+      ...this.NETWORK,
+      contractAddress: this.NETWORK.entropyContract // Add contractAddress for compatibility
+    };
+    
     if (typeof network === 'number' && network === 421614) {
-      return this.NETWORK;
+      return config;
     }
     if (network === 'arbitrum-sepolia' || !network) {
-      return this.NETWORK;
+      return config;
     }
     // Fallback to primary network
-    return this.NETWORK;
+    return config;
   },
 
   /**

@@ -10,8 +10,8 @@ export const MONAD_TESTNET_CONFIG = {
   network: 'monad-testnet-testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'MOCA'',
-  symbol: 'MOCA'A'A',
+    name: 'MOCA',
+  symbol: 'MOCA',
   },
   rpcUrls: {
     default: {

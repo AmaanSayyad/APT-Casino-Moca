@@ -5,10 +5,10 @@
 export const TREASURY_CONFIG = {
   // Moca Chain Testnet Treasury Wallet (for deposits/withdrawals)
   MOCA: {
-    ADDRESS: process.env.MOCA_TREASURY_ADDRESS || process.env.TREASURY_ADDRESS,
+    ADDRESS: process.env.NEXT_PUBLIC_MOCA_TREASURY_ADDRESS || process.env.MOCA_TREASURY_ADDRESS || process.env.TREASURY_ADDRESS,
     PRIVATE_KEY: process.env.MOCA_TREASURY_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY,
     NETWORK: {
-      CHAIN_ID: '0x36668', // Moca Chain testnet (222888 in hex)
+      CHAIN_ID: '0x366a8', // Moca Chain testnet (222888 in hex)
       CHAIN_NAME: 'Moca Chain Testnet',
       RPC_URL: process.env.NEXT_PUBLIC_MOCA_TESTNET_RPC || 'https://testnet-rpc.mocachain.org/',
       EXPLORER_URL: process.env.NEXT_PUBLIC_MOCA_TESTNET_EXPLORER || 'https://testnet-scan.mocachain.org/'
@@ -28,12 +28,12 @@ export const TREASURY_CONFIG = {
   },
   
   // Backward compatibility (defaults to Moca for main operations)
-  ADDRESS: process.env.MOCA_TREASURY_ADDRESS || process.env.TREASURY_ADDRESS,
+  ADDRESS: process.env.NEXT_PUBLIC_MOCA_TREASURY_ADDRESS || process.env.MOCA_TREASURY_ADDRESS || process.env.TREASURY_ADDRESS,
   PRIVATE_KEY: process.env.MOCA_TREASURY_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY,
   
   // Network configuration for Moca Chain Testnet (for deposit/withdraw)
   NETWORK: {
-    CHAIN_ID: '0x36668', // Moca Chain testnet (222888 in hex)
+    CHAIN_ID: '0x366a8', // Moca Chain testnet (222888 in hex)
     CHAIN_NAME: 'Moca Chain Testnet',
     RPC_URL: process.env.NEXT_PUBLIC_MOCA_TESTNET_RPC || 'https://testnet-rpc.mocachain.org/',
     EXPLORER_URL: process.env.NEXT_PUBLIC_MOCA_TESTNET_EXPLORER || 'https://testnet-scan.mocachain.org/'

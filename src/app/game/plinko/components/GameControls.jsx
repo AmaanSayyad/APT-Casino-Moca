@@ -335,7 +335,9 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     const totalBetAmount = totalBets * betValue;
     const currentBalance = parseFloat(userBalance);
     return totalBetAmount <= currentBalance && betValue >= 0.001;
-  // Get current balance in MOCA for display display
+  };
+
+  // Get current balance in MOCA for display
   const getCurrentBalanceInMON = () => {
     return parseFloat(userBalance || '0').toFixed(5);
   };
@@ -589,8 +591,8 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
           {((gameMode === "auto" && !hasSufficientBalanceForAutoBet()) || (!gameMode === "auto" && !hasSufficientBalance())) && parseFloat(betAmount) > 0 && (
             <div className="text-center text-red-400 text-sm">
               {gameMode === "auto" 
-                ? `Insufficient balance MOCA each` 
-                : `Insufficient balance MOCA bet`
+                ? `Insufficient balance: ${betAmount} MOCA each` 
+                : `Insufficient balance: ${betAmount} MOCA bet`
               }
             </div>
           )}

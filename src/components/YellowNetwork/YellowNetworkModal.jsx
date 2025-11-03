@@ -30,7 +30,7 @@ const YellowNetworkModal = ({ isOpen, onClose, gameType = 'MINES' }) => {
       // Create game session with SDK randomness
       await createGameSession(gameType, {
         network: 'arbitrum-sepolia',
-        token: 'MOCA'',
+        token: 'MOCA',
         randomnessSource: 'sdk'
       });
       

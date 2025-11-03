@@ -481,7 +481,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         console.log('Bet amount (ref):', betAmountRef.current);
         console.log('Multiplier:', multiplier, '(bin index:', binIndex, ')');
         console.log('Multiplier value:', multiplierValue);
-        console.log('Reward calculated:', reward, 'MOCA'');
+        console.log('Reward calculated:', reward, 'MOCA');
         console.log('==================');
         
         // Add reward to current balance (bet amount already deducted when ball was spawned)

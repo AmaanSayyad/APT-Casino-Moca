@@ -84,8 +84,8 @@ export default function Bank() {
           available: "$320,000"
         },
         {
-      symbol: "MOCA"CA"CA",
-          na'MOCA'MOCA',
+          symbol: "MOCA",
+          name: "MOCA",
           iconColor: "#2196F3",
           address: null,
           apr: "4.8%",

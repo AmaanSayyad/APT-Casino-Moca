@@ -1,28 +1,28 @@
-// Network utilities for Monad Testnet
-import { monadTestnet } from '@/config/chains';
+// Network utilities for Moca Chain Testnet
+import { mocaChainTestnet } from '@/config/chains';
 
-export const MONAD_TESTNET_CONFIG = {
-  chainId: '0x279f', // 10143 in hex
-  chainName: 'Monad Testnet',
+export const MOCA_CHAIN_TESTNET_CONFIG = {
+  chainId: '0x366a8', // 222888 in hex
+  chainName: 'Moca Chain Testnet',
   nativeCurrency: {
-    name: 'Monad',
-    symbol: 'MOCA''',
+    name: 'MOCA',
+    symbol: 'MOCA',
     decimals: 18,
   },
-  rpcUrls: ['https://testnet-rpc.monad.xyz'],
-  blockExplorerUrls: ['https://testnet.monadexplorer.com'],
+  rpcUrls: ['https://testnet-rpc.mocachain.org/'],
+  blockExplorerUrls: ['https://testnet-scan.mocachain.org/'],
 };
 
-export const switchToMonadTestnet = async () => {
+export const switchToMocaChainTestnet = async () => {
   if (!window.ethereum) {
     throw new Error('MetaMask is not installed');
   }
 
   try {
-    // Try to switch to Monad Testnet
+    // Try to switch to Moca Chain Testnet
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: MONAD_TESTNET_CONFIG.chainId }],
+      params: [{ chainId: MOCA_CHAIN_TESTNET_CONFIG.chainId }],
     });
   } catch (switchError) {
     // If the chain is not added, add it
@@ -30,26 +30,33 @@ export const switchToMonadTestnet = async () => {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [MONAD_TESTNET_CONFIG],
+          params: [MOCA_CHAIN_TESTNET_CONFIG],
         });
       } catch (addError) {
-        throw new Error('Failed to add Monad Testnet to MetaMask');
+        throw new Error('Failed to add Moca Chain Testnet to MetaMask');
       }
     } else {
-      throw new Error('Failed to switch to Monad Testnet');
+      throw new Error('Failed to switch to Moca Chain Testnet');
     }
   }
 };
 
-export const isMonadTestnet = (chainId) => {
-  return chainId === 10143 || chainId === '0x279f';
+export const isMocaChainTestnet = (chainId) => {
+  return chainId === 222888 || chainId === '0x366a8' || chainId === '0x366A8';
 };
 
-export const formatMonBalance = (balance, decimals = 5) => {
+export const formatMocaBalance = (balance, decimals = 5) => {
   const numBalance = parseFloat(balance || '0');
   return `${numBalance.toFixed(decimals)} MOCA`;
 };
 
-export const getMonadTestnetExplorerUrl = (txHash) => {
-  return `https://testnet.monadexplorer.com/tx/${txHash}`;
+export const getMocaChainTestnetExplorerUrl = (txHash) => {
+  return `https://testnet-scan.mocachain.org/tx/${txHash}`;
 };
+
+// Legacy exports for backward compatibility
+export const MONAD_TESTNET_CONFIG = MOCA_CHAIN_TESTNET_CONFIG;
+export const switchToMonadTestnet = switchToMocaChainTestnet;
+export const isMonadTestnet = isMocaChainTestnet;
+export const formatMonBalance = formatMocaBalance;
+export const getMonadTestnetExplorerUrl = getMocaChainTestnetExplorerUrl;

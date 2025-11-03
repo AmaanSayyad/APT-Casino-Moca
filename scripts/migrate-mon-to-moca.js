@@ -16,7 +16,7 @@ const EXCLUDE_DIRS = ['node_modules', '.git', '.next', 'build', 'dist', 'cache',
 // Replacement patterns
 const REPLACEMENTS = [
   // Currency symbols and names
-  { from: /\bMON\b/g, to: 'MOCA', description: 'Currency symbol MOCA -> MOCA' },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
   { from: /\bMon\b/g, to: 'Moca', description: 'Currency naMocaMon -> Moca' },
   { from: /\bmon\b/g, to: 'moca', description: 'Currency lowercmoca mon -> moca' },
   
@@ -26,28 +26,28 @@ const REPLACEMENTS = [
   { MOCA tokensen tokens/g, to: 'MOCA tokens', descrMOCA tokenskenA tokens -> MOCA tokens' },
   
   // Comments and descriptionsGet MOCA tokensensokenCA tokens/g, to: 'Get MOCA tokens'Get MOCA tokenskenstokenOCA tokens -> Get MOCA toDeposit MOCA { from: /Deposit MOCA/g, to: 'DepositDeposit MOCAcription: 'Deposit MOCA -> DepoMOCA balance,
-  { from: /MOCA balance/g, to: 'MOCMOCA balance description: 'MOCA balance -> in MOCAalance' },
-  { from: /in MOCA/g,in MOCAin MOCA', description: 'inMOCA minimum MOCA' },
-  { from: /MOCA minimum/g, MOCA minimuminimum', description: 'MOCA minMOCA maximumA minimum' },
-  { from: /MOCA maximumMOCA maximumCA maximum', description: 'MOCA maximum -> MOCA maximum' },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
  "MOCA"// Configuration values
-  { from: /"MO"MOCA", to: '"MOCA"', descripti'MOCA'String "MOCA" -> "MOCA"' },
-  { from: 'MOCA'A'/g, to: "'MOCA'", descrsymbol: "MOCA"MOCA"MOCA' -> 'MOCA'" },
-  { from: /symsymbol: "MOCA""MOCA" 'symbol: "MOCA"', descriptsymbol: 'MOCA'MOCA'CA" -> symbol: "MOCA"' },
-  { fromsymbol: 'MOCA''MOCA'g, to: "symbol: 'MOCA'", decurrencySymbol: "MOCA"MOCA' -"MOCA"bol: 'MOCA'" },
-  { from: /currenccurrencySymbol: "MOCA": 'curre"MOCA"mbol: "MOCA"', description:currencySymbol: 'MOCA'CA" -'MOCA'rencySymbol: "MOCA"' },
-  { from: /ccurrencySymbol: 'MOCA'/g, to'MOCA'rrencySymbol: 'MOCA'", description: "currencySymbol: 'MOCA' -> currencySymbol: 'MOCA'" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { fromsymbol: 'MOCAMOCA'g, to: "symbol: 'MOCA'", decurrencySymbol: "MOCA"MOCA' -"MOCA"bol: 'MOCA'" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
   
   // EnvironCURRENCY_SYMBOL=MOCAs (but not the variable names themselves)
   {CURRENCY_SYMBOL=MOCAMBOL=MOCA/g, to: 'CURRENCY_SYMBOL=MOCA'CURRENCY=MOCAn: 'CURRENCY_SYMBOL=MOCA -> CURRENCY_SYCURRENCY=MOCA,
-  { from: /CURRENCY=MOCA/g, to: 'CURRENCY=MOCA', description: 'CURRENCY=MOCA -> CURRENCY=MOCA' },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
   
   // Code comments
-  { from: /\/\/ .*MOCA.*/g, to: (match) => match.re* .*MOCA.*\*\//g, to: (match) => match.replace(/MOCA/g, 'MOCA'), description: 'Block comments with MOCA -> MOCA' },) => match.replace(/MOCA/g, 'MOCA'), description: '* .*MOCA.*/g, to: (match) => match.replace(/MOCA/g, 'MOCA'), description: 'Solidity comments with MOCA -> MOCA' },) => match.replace(/MOCA/g, 'MOCA'), description: 'Solidity comments with MOCA -> MOCA' },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
   
   // README and documentation
-  { from: /Native currency for Monad Testnet/g,MOCA Tokenive currency for Moca Chain Testnet'MOCA Tokention: 'Documentation update' },
-  { from: /MOCA Token/g, to: 'MOCA Token', description: 'MOCA Token -> MOCA Token' },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
+  { from: /MON/g, to: "MOCA", description: "Currency symbol MON -> MOCA" },
   
   // Specific patterns to avoid breaking Monad network references
   // We want to keep "Monad Testnet" as network name but change currency

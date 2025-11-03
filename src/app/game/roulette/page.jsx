@@ -1362,7 +1362,9 @@ export default function GameRoulette() {
 
   // Redux state management
   const dispatch = useDispatch();
-  const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balanc// Function to fetch real MOCA balancecebalance
+  const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  
+  // Function to fetch real MOCA balance
   const fetchRealBalance = useCallback(async () => {
     if (!account?.address) return;
 
@@ -1603,7 +1605,7 @@ export default function GameRoulette() {
     }
 
     // Check Redux balance instead of wallet
-    const currentBalance = parseFloat(userBalance // Balance is already in MOCAAdy in MOCA
+    const currentBalance = parseFloat(userBalance); // Balance is already in MOCA
     const totalBetAmount = total;
 
     if (currentBalance < totalBetAmount) {

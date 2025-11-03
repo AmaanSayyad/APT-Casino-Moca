@@ -63,22 +63,20 @@ class PythEntropyService {
         console.warn('⚠️ PYTH ENTROPY: Arbitrum treasury private key not found, using read-only provider');
       }
 
-      // Get contract address for the network (our Casino Entropy Consumer)
-      const contractAddress = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_CASINO_CONTRACT;
+      // Use Pyth Entropy contract directly
+      const contractAddress = networkConfig.contractAddress; // This is the Pyth Entropy contract
       
       if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error(`Casino Entropy Consumer contract not deployed on ${this.network}`);
+        throw new Error(`Pyth Entropy contract not found for ${this.network}`);
       }
 
-      // Initialize contract with Casino Entropy Consumer ABI
+      // Initialize contract with Pyth Entropy ABI
       this.contractABI = [
-        "function request(bytes32 userRandomNumber) external payable returns (uint64)",
-        "function getRequest(bytes32 requestId) external view returns (tuple(address requester, uint8 gameType, string gameSubType, bool fulfilled, bytes32 randomValue, uint256 timestamp, uint64 sequenceNumber, bytes32 commitment))",
-        "function isRequestFulfilled(bytes32 requestId) external view returns (bool)",
-        "function getRandomValue(bytes32 requestId) external view returns (bytes32)",
-        "function entropyFee() external view returns (uint256)",
-        "event EntropyRequested(bytes32 indexed requestId, uint8 gameType, string gameSubType, address requester)",
-        "event EntropyFulfilled(bytes32 indexed requestId, bytes32 randomValue)"
+        "function requestWithCallback(address provider, bytes32 userRandomNumber) external payable returns (uint64)",
+        "function getFee(address provider) external view returns (uint128)",
+        "function getDefaultProvider() external view returns (address)",
+        "function getRandomValue(address provider, uint64 sequenceNumber, bytes32 userRandomNumber) external view returns (bytes32)",
+        "event PythRandomEvents(address indexed provider, uint64 indexed sequenceNumber, bytes32 userRandomNumber, bytes32 providerRandomNumber)"
       ];
       
       this.contract = new Contract(

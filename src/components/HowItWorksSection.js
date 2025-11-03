@@ -30,7 +30,7 @@ const HowItWorksSection = () => {
     {
       id: 2,
       title: 'Get MOCA tokenssns',
-      description: 'Power your gameplay with MON tokens of Monad Network.',
+      description: 'Power your gameplay with MOCA tokens of Moca Chain.',
       emoji: '💰'
     },
     {
@@ -42,7 +42,7 @@ const HowItWorksSection = () => {
     {
       id: 4,
       title: 'Earn Rewards',
-      descriptionin MOCAOCA tokensnens and unlock exclusive perks through our multi-tiered loyalty program. Earn cashback on losses and gain access to tournaments.',
+      description: 'Earn rewards in MOCA tokens and unlock exclusive perks through our multi-tiered loyalty program. Earn cashback on losses and gain access to tournaments.',
       emoji: '🏆'
     },
   ];
@@ -112,7 +112,7 @@ const HowItWorksSection = () => {
                   <EthereumConnectWalletButton />
                 ) : (
                   <GradientBorderButton className="transform hover:scale-105 transition-transform">
-                    {activeStep ===Get MOCA tokensensenkens' : 
+                    {activeStep === 2 ? 'Get MOCA Tokens' : 
                      activeStep === 3 ? 'Browse Games' : 'View Rewards'}
                   </GradientBorderButton>
                 )}
