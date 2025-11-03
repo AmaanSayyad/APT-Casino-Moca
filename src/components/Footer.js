@@ -27,8 +27,8 @@ export default function Footer() {
   ];
   
   const paymentMethods = [
-    { name: "MON", icon: "/icons/eth.svg" },
-    { name: "MON", icon: "/icons/apt.svg" },
+    { name: "MOCA"", icon: "/icons/eth.svg" },
+    { name:"MOCA"A", icon: "/icons/apt.svg" },
   ];
   
   const handleSubscribe = (e) => {

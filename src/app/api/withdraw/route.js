@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 
-// Monad Treasury private key from environment
-const MONAD_TREASURY_PRIVATE_KEY = process.env.MONAD_TREASURY_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY || "0x73e0cfb4d786d6e542533e18eb78fb5c727ab802b89c6850962042a8f0835f0c";
+// Moca Chain Treasury private key from environment
+const MOCA_TREASURY_PRIVATE_KEY = process.env.MOCA_TREASURY_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY;
 
-// Monad Testnet RPC URL
-const MONAD_TESTNET_RPC = process.env.NEXT_PUBLIC_0G_GALILEO_RPC || 'https://testnet-rpc.monad.xyz';
+// Moca Chain Testnet RPC URL
+const MOCA_TESTNET_RPC = process.env.NEXT_PUBLIC_MOCA_TESTNET_RPC || 'https://testnet-rpc.mocachain.org/';
 
 // Create provider and wallet
-const provider = new ethers.JsonRpcProvider(MONAD_TESTNET_RPC);
-const treasuryWallet = new ethers.Wallet(MONAD_TREASURY_PRIVATE_KEY, provider);
+let provider, treasuryWallet;
+
+if (MOCA_TREASURY_PRIVATE_KEY) {
+  provider = new ethers.JsonRpcProvider(MOCA_TESTNET_RPC);
+  treasuryWallet = new ethers.Wallet(MOCA_TREASURY_PRIVATE_KEY, provider);
+}
 
 export async function POST(request) {
   try {
@@ -29,21 +33,21 @@ export async function POST(request) {
       });
     }
 
-    if (!MONAD_TREASURY_PRIVATE_KEY) {
+    if (!MOCA_TREASURY_PRIVATE_KEY || !treasuryWallet) {
       return NextResponse.json(
-        { error: 'Treasury not configured' },
+        { error: 'Moca Chain treasury not configured' },
         { status: 500 }
       );
     }
 
-    console.log(`🏦 Processing withdrawal: ${amount} MON to ${userAddress}`);
-    console.log(`📍 Treasury: ${treasuryWallet.address}`);
+    console.log(`🏦 Processing withdrawal: ${amount} MOCA to ${userAddress}`);
+    console.log(`📍 Moca Treasury: ${treasuryWallet.address}`);
 
     // Check treasury balance
     let treasuryBalance = 0;
     try {
       treasuryBalance = await provider.getBalance(treasuryWallet.address);
-      console.log(`💰 Treasury balance: ${ethers.formatEther(treasuryBalance)} MON`);
+      console.log(`💰 Treasury balance: ${ethers.formatEther(treasuryBalance)} MOCA`);
     } catch (balanceError) {
       console.log('⚠️ Could not check treasury balance, proceeding with transfer attempt...');
       console.log('Balance error:', balanceError.message);
@@ -53,7 +57,7 @@ export async function POST(request) {
     const amountWei = ethers.parseEther(amount.toString());
     if (treasuryBalance < amountWei) {
       return NextResponse.json(
-        { error: `Insufficient treasury funds. Available: ${ethers.formatEther(treasuryBalance)} MON, Requested: ${amount} MON` },
+        { error: `Insufficient treasury funds. Available: ${ethers.formatEther(treasuryBalance)} MOCA, Requested: ${amount} MOCA` },
         { status: 400 }
       );
     }
@@ -74,18 +78,18 @@ export async function POST(request) {
     console.log('🔧 Treasury account:', treasuryWallet.address);
     console.log('🔧 Amount in Wei:', amountWei.toString());
 
-    // Send transaction from treasury to user
+    // Send MOCA transaction from treasury to user
     const tx = await treasuryWallet.sendTransaction({
       to: formattedUserAddress,
       value: amountWei,
-      gasLimit: process.env.GAS_LIMIT_WITHDRAW ? parseInt(process.env.GAS_LIMIT_WITHDRAW) : 100000
+      gasLimit: process.env.MOCA_GAS_LIMIT_WITHDRAW ? parseInt(process.env.MOCA_GAS_LIMIT_WITHDRAW) : 100000
     });
 
     console.log(`📤 Transaction sent: ${tx.hash}`);
 
     // Return transaction hash immediately without waiting for confirmation
     // User can check transaction status on Etherscan
-    console.log(`✅ Withdraw MON to ${userAddress}, TX: ${tx.hash}`);
+    console.log(`✅ Withdraw MOCA to ${userAddress}, TX: ${tx.hash}`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -94,7 +98,7 @@ export async function POST(request) {
       userAddress: userAddress,
       treasuryAddress: treasuryWallet.address,
       status: 'pending',
-      message: 'Transaction sent successfully. Check Etherscan for confirmation.'
+      message: 'Transaction sent successfully. Check Moca Chain Explorer for confirmation.'
     }), {
       status: 200,
       headers: {
@@ -125,44 +129,44 @@ export async function POST(request) {
   }
 }
 
-// GET endpoint to check treasury balance
+// GET endpoint to check Moca Chain treasury balance
 export async function GET() {
   try {
-    if (!MONAD_TREASURY_PRIVATE_KEY) {
+    if (!MOCA_TREASURY_PRIVATE_KEY || !treasuryWallet) {
       return NextResponse.json(
-        { error: 'Treasury not configured' },
+        { error: 'Moca Chain treasury not configured' },
         { status: 500 }
       );
     }
 
-    const treasuryAccount = new EthereumAccount(
-      new Uint8Array(Buffer.from(MONAD_TREASURY_PRIVATE_KEY.slice(2), 'hex'))
-    );
-
-    const coinClient = new CoinClient(client);
-
     try {
-      const balance = await coinClient.checkBalance(treasuryAccount);
+      const balance = await provider.getBalance(treasuryWallet.address);
 
       return NextResponse.json({
-        treasuryAddress: treasuryAccount.address().hex(),
-        balance: balance / 100000000, // Convert to MON balanceOctas: balance.toString(),
+        treasuryAddress: treasuryWallet.address,
+        balance: ethers.formatEther(balance),
+        balanceWei: balance.toString(),
+        currency: 'MOCA',
+        network: 'Moca Chain Testnet',
         status: 'active'
       });
     } catch (balanceError) {
+      console.error('Balance check error:', balanceError);
       return NextResponse.json({
-        treasuryAddress: treasuryAccount.address().hex(),
-        balance: 0,
-        balanceOctas: '0',
-        status: 'initializing',
-        note: 'Treasury wallet is being initialized. Please wait a few minutes.'
+        treasuryAddress: treasuryWallet.address,
+        balance: '0',
+        balanceWei: '0',
+        currency: 'MOCA',
+        network: 'Moca Chain Testnet',
+        status: 'error',
+        error: balanceError.message
       });
     }
 
   } catch (error) {
     console.error('Treasury balance check error:', error);
     return NextResponse.json(
-      { error: 'Failed to check treasury balance: ' + error.message },
+      { error: 'Failed to check Moca Chain treasury balance: ' + error.message },
       { status: 500 }
     );
   }

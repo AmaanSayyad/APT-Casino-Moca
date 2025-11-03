@@ -51,8 +51,8 @@ export default function Plinko() {
   const PlinkoHeader = () => {
     const gameStatistics = {
       totalBets: '1,234,567',
-      totalVolume: '5.2M MON',
-      maxWin: '120,000 MON'
+      totalVolume: '5.2M MOCA',
+      maxWin: '120,000 MOCA'
     };
     return (
       <div className="relative text-white px-4 md:px-8 lg:px-20 mb-8 pt-28 md:pt-32 lg:pt-36 mt-6">
@@ -187,7 +187,7 @@ export default function Plinko() {
   };
 
   const handleBet = () => {
-    // Trigger the ball dropping animation in PlinkoGame. balance MOName
+  // Trigger the ball dropping animation in PlinkoGame. balance MOCAameme
     console.log('Main page handleBet called');
     if (plinkoGameRef.current && plinkoGameRef.current.dropBall) {
       plinkoGameRef.current.dropBall();

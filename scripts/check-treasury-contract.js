@@ -22,11 +22,11 @@ async function checkTreasuryContract() {
       
       // Check balance
       const balance = await provider.getBalance(treasuryAddress);
-      console.log('💰 Treasury Balance:', ethers.formatEther(balance), 'MON');
+      console.log('💰 Treasury Balance:', ethers.formatEther(balance), 'MOCA'');
     } else {
       console.log('👤 Treasury is an EOA (Externally Owned Account)');
       const balance = await provider.getBalance(treasuryAddress);
-      console.log('💰 Treasury Balance:', ethers.formatEther(balance), 'MON');
+      console.log('💰 Treasury Balance:', ethers.formatEther(balance),'MOCA'A');
     }
     
     // Check target address
@@ -34,7 +34,7 @@ async function checkTreasuryContract() {
     const targetCode = await provider.getCode(targetAddress);
     console.log('🔧 Target Is Contract:', targetCode !== '0x');
     const targetBalance = await provider.getBalance(targetAddress);
-    console.log('💰 Target Balance:', ethers.formatEther(targetBalance), 'MON');
+    console.log('💰 Target Balance:', ethers.formatEther(targetBalance)'MOCA'CA');
     
   } catch (error) {
     console.error('❌ Error:', error.message);

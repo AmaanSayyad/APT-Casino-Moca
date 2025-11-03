@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, Fade } from '@mui/material';
 import { FaHistory, FaChartLine, FaFire, FaExclamationCircle, FaCoins, FaInfoCircle, FaTrophy, FaDice, FaExternalLinkAlt } from 'react-icons/fa';
 
-// Utility function to format MON amounts with proper decimal precision
+// Utility function to format MOCA amounts with proper decimal precisionn
 const formatMONAmount = (amount) => {
   if (typeof amount !== 'number') {
     amount = parseFloat(amount) || 0;
@@ -484,7 +484,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             )}
                           </Box>
                         </TableCell>
-                        <TableCell align="center">{formatMONAmount(bet.amount || bet.totalBetAmount || 0)} MON</TableCell>
+                        <TableCell align="center">{formatMONAmount(bet.amount || bet.totalBetAmount || 0)} MOCA</TableCell>
                         <TableCell align="center">
                           <Box 
                             sx={{ 
@@ -520,7 +520,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             {bet.win ? (
                               <>
                                 <FaCoins size={12} color="#14D854" />
-                                +{formatMONAmount(bet.payout || bet.netResult || 0)} MON
+                                +{formatMONAmount(bet.payout || bet.netResult || 0)} MOCA
                               </>
                             ) : '-'}
                           </Typography>
@@ -741,7 +741,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       </Box>
                       <Typography variant="body2" color="rgba(255,255,255,0.7)">Total Wagered</Typography>
                     </Box>
-                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatMONAmount(stats.totalWagered)} MON</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatMONAmount(stats.totalWagered)} MOCA</Typography>
                   </Box>
                   
                   <Box 
@@ -783,7 +783,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       color={stats.netProfit >= 0 ? '#14D854' : '#d82633'}
                       sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
-                      {stats.netProfit >= 0 ? '+' : ''}{formatMONAmount(stats.netProfit)} MON
+                      {stats.netProfit >= 0 ? '+' : ''}{formatMONAmount(stats.netProfit)} MOCA
                     </Typography>
                   </Box>
                 </Box>
@@ -903,7 +903,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             zIndex: 2 
                           }}
                         >
-                          {stats.biggestWin.payout} MON
+                          {stats.biggestWin.payout} MOCA
                         </Typography>
                         <Box 
                           sx={{ 

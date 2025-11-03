@@ -120,7 +120,7 @@ export default function Mines() {
       console.log('✅ PYTH ENTROPY: Initialized successfully');
       
       console.log('✅ PYTH ENTROPY: Mines game session created successfully');
-      console.log(`🎮 Game Config: ${formData.mines || 3} mines | ${formData.betAmount || '0.01'} MON bet`);
+      console.log(`🎮 Game Config: ${formData.mines || 3} mines | ${formData.betAmount || '0.01'} MOCA bet`);
       
     } catch (error) {
       console.error('❌ PYTH ENTROPY: Connection failed:', error);
@@ -222,9 +222,9 @@ export default function Mines() {
     const newHistoryItem = {
       id: Date.now(),
       mines: result.mines || 0,
-      bet: `${result.betAmount || '0.00000'} MON`,
+      bet: `${result.betAmount || '0.00000'} MOCA`,
       outcome: result.won ? 'win' : 'loss',
-      payout: result.won ? `${result.payout || '0.00000'} MON` : '0.00000 MON',
+      payout: result.won ? `${result.payout || '0.00000'} MOCA` : '0.00000 MOCA',
       multiplier: result.won ? `${result.multiplier || '0.00'}x` : '0.00x',
       time: 'Just now',
       entropyProof: entropyProof

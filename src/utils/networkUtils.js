@@ -6,7 +6,7 @@ export const MONAD_TESTNET_CONFIG = {
   chainName: 'Monad Testnet',
   nativeCurrency: {
     name: 'Monad',
-    symbol: 'MON',
+    symbol: 'MOCA''',
     decimals: 18,
   },
   rpcUrls: ['https://testnet-rpc.monad.xyz'],
@@ -47,7 +47,7 @@ export const isMonadTestnet = (chainId) => {
 
 export const formatMonBalance = (balance, decimals = 5) => {
   const numBalance = parseFloat(balance || '0');
-  return `${numBalance.toFixed(decimals)} MON`;
+  return `${numBalance.toFixed(decimals)} MOCA`;
 };
 
 export const getMonadTestnetExplorerUrl = (txHash) => {

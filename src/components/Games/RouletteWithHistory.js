@@ -33,7 +33,7 @@ const RouletteWithHistory = () => {
   const [betConfig, setBetConfig] = useState({
     betType: 'straight',
     betValue: 7,
-    betAmount: ethers.parseEther('0.01') // 0.01 MON
+    betAmount: ethers.parseEther('0.01') // 0.01 MOCAA
   });
 
   // Initialize roulette processor
@@ -303,8 +303,8 @@ const RouletteWithHistory = () => {
               {gameState.result.isWin ? '🎉 YOU WIN!' : '😔 YOU LOSE'}
             </div>
             <div className="text-sm text-gray-600">
-              Bet: {ethers.formatEther(betConfig.betAmount)} MON →
-              Payout: {ethers.formatEther(gameState.result.payoutResult.payout.toString())} MON
+              Bet: {ethers.formatEther(betConfig.betAmount)} MOCA →
+              Payout: {ethers.formatEther(gameState.result.payoutResult.payout.toString())} MOCA
             </div>
             <div className={`font-medium ${gameState.result.isWin ? 'text-green-600' : 'text-red-600'
               }`}>

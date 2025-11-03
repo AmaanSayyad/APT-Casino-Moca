@@ -1,0 +1,11 @@
+{
+  "network": "moca-testnet",
+  "chainId": 222888,
+  "contractName": "MocaCasinoContract",
+  "contractAddress": "0xF7217745993538b0AE16319d43b88582Dae80ADa",
+  "treasuryAddress": "0x025182b20Da64b5997d09a5a62489741F68d9B96",
+  "deploymentTime": "2025-11-03T12:41:50.540Z",
+  "deployer": "0x025182b20Da64b5997d09a5a62489741F68d9B96",
+  "transactionHash": "0x6c36865d63c3abb6052e0dc17a1ec927340e22cc84794c37b1b5e762de113380",
+  "blockNumber": null
+}

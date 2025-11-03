@@ -28,8 +28,12 @@
     "deploy:pyth-entropy:mainnet": "npx hardhat run scripts/deploy-pyth-entropy.js --network arbitrum-one",
     "test:pyth-entropy": "node scripts/test-pyth-entropy.js",
     "verify:onchain": "npx hardhat run scripts/verify-onchain.js --network arbitrum-sepolia",
-    "deploy:monad": "npx hardhat run scripts/deploy-casino.js --network monad-testnet",
-    "test:monad": "node scripts/test-monad-integration.js"
+    "deploy:moca": "npx hardhat run scripts/deploy-moca-casino.js --network moca-testnet",
+    "test:moca": "node scripts/test-moca-integration.js",
+    "deploy:entropy-arb": "npx hardhat run scripts/deploy-pyth-entropy.js --network arbitrum-sepolia",
+    "migrate:moca-to-moca": "node scripts/migrate-moca-to-moca.js",
+    "test:migration": "node scripts/test-moca-migration.js",
+    "migration:summary": "node scripts/migration-summary.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",

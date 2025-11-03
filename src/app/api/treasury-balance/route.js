@@ -1,48 +1,79 @@
 import { NextResponse } from 'next/server';
 import { ethers, JsonRpcProvider, Wallet } from 'ethers';
 import { TREASURY_CONFIG } from '@/config/treasury.js';
-import PYTH_ENTROPY_CONFIG from '@/config/pythEntropy.js';
 
 export async function GET() {
   try {
-    const network = process.env.NEXT_PUBLIC_NETWORK || 'monad-testnet';
-    const networkConfig = PYTH_ENTROPY_CONFIG.getNetworkConfig(network);
+    // Get Moca Chain treasury info
+    const mocaTreasuryAddress = TREASURY_CONFIG.MOCA.ADDRESS;
+    const mocaTreasuryKey = TREASURY_CONFIG.MOCA.PRIVATE_KEY;
     
-    if (!networkConfig) {
+    if (!mocaTreasuryAddress || !mocaTreasuryKey) {
       return NextResponse.json(
-        { error: 'Unsupported network' },
-        { status: 400 }
+        { error: 'Moca Chain treasury not configured' },
+        { status: 500 }
       );
     }
 
-    // Create provider
-    const provider = new JsonRpcProvider(networkConfig.rpcUrl);
+    // Create Moca Chain provider
+    const mocaProvider = new JsonRpcProvider(TREASURY_CONFIG.MOCA.NETWORK.RPC_URL);
+    const mocaTreasuryWallet = new Wallet(mocaTreasuryKey, mocaProvider);
     
-    // Create treasury wallet
-    const treasuryWallet = new Wallet(TREASURY_CONFIG.PRIVATE_KEY, provider);
+    // Get Moca treasury balance
+    const mocaBalance = await mocaProvider.getBalance(mocaTreasuryWallet.address);
+    const balanceInMoca = ethers.formatEther(mocaBalance);
     
-    // Get treasury balance
-    const balance = await provider.getBalance(treasuryWallet.address);
-    const balanceInMon = ethers.formatEther(balance);
+    // Get Arbitrum treasury info for entropy operations
+    const arbitrumTreasuryAddress = TREASURY_CONFIG.ARBITRUM.ADDRESS;
+    const arbitrumTreasuryKey = TREASURY_CONFIG.ARBITRUM.PRIVATE_KEY;
     
-    // Get entropy contract address
-    const entropyContractAddress = PYTH_ENTROPY_CONFIG.getEntropyContract(network);
+    let arbitrumBalance = '0';
+    let arbitrumBalanceWei = '0';
+    
+    if (arbitrumTreasuryAddress && arbitrumTreasuryKey) {
+      try {
+        const arbitrumProvider = new JsonRpcProvider(TREASURY_CONFIG.ARBITRUM.NETWORK.RPC_URL);
+        const arbitrumTreasuryWallet = new Wallet(arbitrumTreasuryKey, arbitrumProvider);
+        const arbBalance = await arbitrumProvider.getBalance(arbitrumTreasuryWallet.address);
+        arbitrumBalance = ethers.formatEther(arbBalance);
+        arbitrumBalanceWei = arbBalance.toString();
+      } catch (arbError) {
+        console.warn('⚠️ Could not fetch Arbitrum treasury balance:', arbError.message);
+      }
+    }
     
     return NextResponse.json({
       success: true,
-      treasury: {
-        address: treasuryWallet.address,
-        balance: balanceInMon,
-        balanceWei: balance.toString()
+      moca: {
+        treasury: {
+          address: mocaTreasuryWallet.address,
+          balance: balanceInMoca,
+          balanceWei: mocaBalance.toString(),
+          currency: 'MOCA'
+        },
+        network: {
+          name: 'Moca Chain Testnet',
+          chainId: 222888,
+          rpcUrl: TREASURY_CONFIG.MOCA.NETWORK.RPC_URL
+        }
       },
-      network: {
-        name: networkConfig.name,
-        chainId: networkConfig.chainId,
-        rpcUrl: networkConfig.rpcUrl
+      arbitrum: {
+        treasury: {
+          address: arbitrumTreasuryAddress,
+          balance: arbitrumBalance,
+          balanceWei: arbitrumBalanceWei,
+          currency: 'ETH'
+        },
+        network: {
+          name: 'Arbitrum Sepolia',
+          chainId: 421614,
+          rpcUrl: TREASURY_CONFIG.ARBITRUM.NETWORK.RPC_URL
+        }
       },
       entropy: {
-        contractAddress: entropyContractAddress,
-        requiredFee: "0.001" // MON
+        network: 'Arbitrum Sepolia',
+        contractAddress: process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_CASINO_CONTRACT,
+        requiredFee: "0.001" // ETH for entropy requests
       }
     });
     
@@ -50,7 +81,7 @@ export async function GET() {
     console.error('❌ Treasury balance check failed:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to check treasury balance',
+        error: 'Failed to check treasury balances',
         details: error.message 
       },
       { status: 500 }

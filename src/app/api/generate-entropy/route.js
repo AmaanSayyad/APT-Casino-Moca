@@ -1,53 +1,56 @@
 import { ethers } from 'ethers';
 
-// Pyth Entropy V2 Contract Configuration for Monad Testnet
-const PYTH_ENTROPY_ADDRESS = '0x36825bf3fbdf5a29e2d5148bfe7dcf7b5639e320';
-const MONAD_TESTNET_RPC = 'https://testnet-rpc.monad.xyz';
+// Pyth Entropy Contract Configuration for Arbitrum Sepolia (Backend Only)
+const PYTH_ENTROPY_ADDRESS = process.env.NEXT_PUBLIC_PYTH_ENTROPY_CONTRACT || '0x549ebba8036ab746611b4ffa1423eb0a4df61440';
+const ARBITRUM_SEPOLIA_RPC = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || 'https://sepolia-rollup.arbitrum.io/rpc';
 
-// Minimal ABI for Pyth Entropy V2 on Monad
-const PYTH_ENTROPY_ABI = [
-  // Core entrypoint used by consumer contracts
-  "function requestWithCallback(address provider, bytes32 userCommitment) external payable returns (uint64)",
-  // Fee depends on the provider address (not global)
-  "function getFee(address provider) external view returns (uint256)",
-  // Helper to discover the default provider on this network
-  "function getDefaultProvider() external view returns (address)",
-  // Useful event to parse sequence number from logs (name may differ across versions)
-  "event Request(address indexed requester, uint64 indexed sequenceNumber, address indexed provider, bytes32 commitment)"
+// ABI for our CasinoEntropyConsumer contract on Arbitrum Sepolia
+const CASINO_ENTROPY_ABI = [
+  "function request(bytes32 userRandomNumber) external payable returns (uint64)",
+  "function getRequest(bytes32 requestId) external view returns (tuple(address requester, uint8 gameType, string gameSubType, bool fulfilled, bytes32 randomValue, uint256 timestamp, uint64 sequenceNumber, bytes32 commitment))",
+  "function isRequestFulfilled(bytes32 requestId) external view returns (bool)",
+  "function getRandomValue(bytes32 requestId) external view returns (bytes32)",
+  "function entropyFee() external view returns (uint256)",
+  "event EntropyRequested(bytes32 indexed requestId, uint8 gameType, string gameSubType, address requester)",
+  "event EntropyFulfilled(bytes32 indexed requestId, bytes32 randomValue)"
 ];
 
 export async function POST(request) {
   try {
-    console.log('🎲 API: Generating Pyth Entropy...');
+    console.log('🎲 API: Generating Pyth Entropy on Arbitrum Sepolia...');
     
-    // Create provider
-    const provider = new ethers.JsonRpcProvider(MONAD_TESTNET_RPC);
+    // Parse request body
+    const body = await request.json();
+    const { gameType, gameConfig } = body;
+    
+    // Create provider for Arbitrum Sepolia
+    const provider = new ethers.JsonRpcProvider(ARBITRUM_SEPOLIA_RPC);
+    
+    // Get our casino entropy consumer contract address
+    const casinoEntropyAddress = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_CASINO_CONTRACT;
+    if (!casinoEntropyAddress) {
+      throw new Error('Casino Entropy Consumer contract address not found. Please deploy first.');
+    }
     
     // Check if contract exists at this address
-    const code = await provider.getCode(PYTH_ENTROPY_ADDRESS);
+    const code = await provider.getCode(casinoEntropyAddress);
     if (code === '0x') {
-      throw new Error(`No contract found at address ${PYTH_ENTROPY_ADDRESS} on Monad Testnet`);
+      throw new Error(`No contract found at address ${casinoEntropyAddress} on Arbitrum Sepolia`);
     }
-    console.log('✅ Contract exists at address:', PYTH_ENTROPY_ADDRESS);
+    console.log('✅ Casino Entropy Consumer exists at:', casinoEntropyAddress);
     
     // Create contract instance
-    const contract = new ethers.Contract(PYTH_ENTROPY_ADDRESS, PYTH_ENTROPY_ABI, provider);
+    const contract = new ethers.Contract(casinoEntropyAddress, CASINO_ENTROPY_ABI, provider);
     
-    // Discover default provider and fee
-    console.log('🔍 Discovering provider and fee...');
-    const defaultProvider = await contract.getDefaultProvider();
-    console.log('✅ Default provider:', defaultProvider);
+    // Get entropy fee
+    console.log('🔍 Getting entropy fee...');
+    let fee = await contract.entropyFee();
+    console.log('✅ Entropy fee:', ethers.formatEther(fee), 'ETH');
     
-    let fee = await contract.getFee(defaultProvider);
-    console.log('✅ Fee for provider:', ethers.formatEther(fee), 'MON');
-    
-    // Let's try to call the contract with minimal data to see what happens
-    console.log('🧪 Testing contract call with minimal parameters...');
-    
-    // Check if we have a private key for signing (use Monad Testnet treasury)
-    const privateKey = process.env.MONAD_TREASURY_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY;
+    // Check if we have a private key for signing (use Arbitrum treasury)
+    const privateKey = process.env.ARBITRUM_TREASURY_PRIVATE_KEY;
     if (!privateKey) {
-      throw new Error('MONAD_TREASURY_PRIVATE_KEY environment variable is required');
+      throw new Error('ARBITRUM_TREASURY_PRIVATE_KEY environment variable is required');
     }
     
     // Create wallet and signer
@@ -58,78 +61,100 @@ export async function POST(request) {
     const userRandomNumber = ethers.randomBytes(32);
     console.log('🎲 User random number:', ethers.hexlify(userRandomNumber));
     
-    // Request random value from Pyth Entropy
-    console.log('🔄 Requesting random value from Pyth Entropy...');
-    console.log('💰 Using fee:', ethers.formatEther(fee), 'MON');
-    console.log('🏦 Wallet address:', wallet.address);
+    // Request random value from our Casino Entropy Consumer
+    console.log('🔄 Requesting entropy from Casino Entropy Consumer...');
+    console.log('💰 Using fee:', ethers.formatEther(fee), 'ETH');
+    console.log('🏦 Treasury address:', wallet.address);
     
     // Check wallet balance first
     const balance = await provider.getBalance(wallet.address);
-    console.log('💳 Wallet balance:', ethers.formatEther(balance), 'MON');
+    console.log('💳 Treasury balance:', ethers.formatEther(balance), 'ETH');
     
     if (balance < fee) {
-      throw new Error(`Insufficient balance. Need ${ethers.formatEther(fee)} MON, have ${ethers.formatEther(balance)} MON. Please add more MON to treasury: ${wallet.address}`);
+      throw new Error(`Insufficient balance. Need ${ethers.formatEther(fee)} ETH, have ${ethers.formatEther(balance)} ETH. Please add more ETH to Arbitrum treasury: ${wallet.address}`);
     }
     
-    // Call the canonical V2 method
-    const tx = await contractWithSigner.requestWithCallback(
-      defaultProvider,
-      userRandomNumber,
-      {
-        value: fee,
-        gasLimit: 700000
-      }
-    );
+    // Call our casino entropy consumer contract
+    const tx = await contractWithSigner.request(userRandomNumber, {
+      value: fee,
+      gasLimit: 500000
+    });
     
-    console.log('✅ RequestV2 sent:', tx.hash);
+    console.log('✅ Entropy request sent:', tx.hash);
     
     // Wait for transaction confirmation
     const receipt = await tx.wait();
     console.log('✅ Transaction confirmed in block:', receipt.blockNumber);
     
-    // Extract sequence number from logs if available
-    let sequenceNumber = null;
+    // Extract request ID from logs
+    let requestId = null;
     for (const log of receipt.logs) {
       try {
         const parsedLog = contract.interface.parseLog(log);
-        if (parsedLog && (parsedLog.name === 'Request' || parsedLog.args?.sequenceNumber)) {
-          sequenceNumber = parsedLog.args.sequenceNumber;
+        if (parsedLog && parsedLog.name === 'EntropyRequested') {
+          requestId = parsedLog.args.requestId;
           break;
         }
       } catch (_) {
         // ignore non-matching logs
       }
     }
-    if (!sequenceNumber) {
-      // Fallback: no event exposed publicly, let frontend use tx hash as reference
-      sequenceNumber = 0n;
+    
+    if (!requestId) {
+      // Generate fallback request ID
+      requestId = ethers.keccak256(
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ['bytes32', 'uint256'],
+          [userRandomNumber, receipt.blockNumber]
+        )
+      );
+    }
+    
+    // Wait a bit for potential fulfillment (Pyth Entropy is usually fast)
+    console.log('⏳ Waiting for entropy fulfillment...');
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+    
+    // Check if request is fulfilled
+    let randomValue = null;
+    try {
+      const isFulfilled = await contract.isRequestFulfilled(requestId);
+      if (isFulfilled) {
+        randomValue = await contract.getRandomValue(requestId);
+        console.log('✅ Entropy fulfilled! Random value:', randomValue);
+      } else {
+        console.log('⏳ Entropy not yet fulfilled, using placeholder');
+        randomValue = generateRandomFromTxHash(tx.hash);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error checking fulfillment, using placeholder:', error.message);
+      randomValue = generateRandomFromTxHash(tx.hash);
     }
     
     // Create entropy proof
     const entropyProof = {
-      sequenceNumber: sequenceNumber.toString(),
+      requestId: requestId,
       userRandomNumber: ethers.hexlify(userRandomNumber),
       transactionHash: tx.hash,
       blockNumber: receipt.blockNumber.toString(),
-      // We cannot synchronously read randomness; return placeholder derived from tx for UI
-      randomValue: generateRandomFromTxHash(tx.hash),
-      network: 'monad-testnet',
-      // Use tx hash for entropy explorer search to ensure results
-      explorerUrl: `https://entropy-explorer.pyth.network/?chain=monad-testnet&search=${tx.hash}`,
-      monadExplorerUrl: `https://testnet.monadexplorer.com/tx/${tx.hash}`,
+      randomValue: randomValue,
+      network: 'arbitrum-sepolia',
+      explorerUrl: `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${tx.hash}`,
+      arbitrumExplorerUrl: `https://sepolia.arbiscan.io/tx/${tx.hash}`,
       timestamp: Date.now(),
-      source: 'Pyth Entropy V1 (Monad Testnet)'
+      source: 'Pyth Entropy (Arbitrum Sepolia)',
+      gameType: gameType,
+      gameConfig: gameConfig
     };
     
     console.log('✅ API: Entropy generated successfully');
     console.log('🔗 Transaction:', tx.hash);
-    const uiRandomValue = entropyProof.randomValue;
-    console.log('🎲 Random value:', uiRandomValue);
+    console.log('🎲 Random value:', randomValue);
     
     return Response.json({
       success: true,
-      randomValue: uiRandomValue,
-      entropyProof: entropyProof
+      randomValue: randomValue,
+      entropyProof: entropyProof,
+      requestId: requestId
     });
     
   } catch (error) {

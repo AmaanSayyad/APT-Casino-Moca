@@ -10,8 +10,8 @@ export const MONAD_TESTNET_CONFIG = {
   network: 'monad-testnet-testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'MON',
-    symbol: 'MON',
+    name: 'MOCA'',
+  symbol: 'MOCA'A'A',
   },
   rpcUrls: {
     default: {
@@ -40,7 +40,7 @@ export const MONAD_TESTNET_CONFIG = {
 export const MONAD_TESTNET_TOKENS = {
   MON: {
     symbol: 'MON',
-    name: 'MON token',
+    name:MOCA tokenken',
     decimals: 18,
     address: '0x0000000000000000000000000000000000000000',
     isNative: true,
@@ -52,10 +52,10 @@ export const MONAD_TESTNET_TOKENS = {
 // Casino configuration for Monad Testnet
 export const MONAD_TESTNET_CASINO_CONFIG = {
   // Deposit/Withdraw settings
-  minDeposit: '0.001', // 0.001 MON
-  maxDeposit: '100',   // 100 MON
-  minWithdraw: '0.001', // 0.001 MON
-  maxWithdraw: '100',   // 100 MON
+  minDeposit: '0// 0.001 MOCA001 MOCA
+  maxDeposit: '// 100 MOCA 100 MOCA
+  minWithdraw: // 0.001 MOCA0.001 MOCA
+  maxWithdraw:// 100 MOCA// 100 MOCA
   
   // Game settings (same as Arbitrum for consistency)
   games: {
@@ -107,8 +107,8 @@ export const switchToOGGalileo = async () => {
           chainId: '0x40da',
           chainName: 'monad-testnet-Testnet',
           nativeCurrency: {
-            name: 'MON',
-            symbol: 'MON',
+          'MOCA'e: 'MOCA',
+symbol: 'MOCA'OCA'ol: 'MOCA',
             decimals: 18,
           },
           rpcUrls: ['https://testnet-rpc.monad.xyz'],

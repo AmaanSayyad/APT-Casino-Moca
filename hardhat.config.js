@@ -1,5 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config({ path: '.env.local' });
+require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -15,7 +15,7 @@ module.exports = {
   networks: {
     'arbitrum-sepolia': {
       url: process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || "https://sepolia-rollup.arbitrum.io/rpc",
-      accounts: ["0x080c0b0dc7aa27545fab73d29b06f33e686d1491aef785bf5ced325a32c14506"],
+      accounts: process.env.ARBITRUM_TREASURY_PRIVATE_KEY ? [process.env.ARBITRUM_TREASURY_PRIVATE_KEY] : [],
       chainId: 421614,
       timeout: 120000, // 2 minutes
       httpHeaders: {
@@ -31,10 +31,10 @@ module.exports = {
         "User-Agent": "hardhat"
       }
     },
-    'monad-testnet': {
-      url: process.env.NEXT_PUBLIC_MONAD_TESTNET_RPC || "https://testnet-rpc.monad.xyz",
-      accounts: process.env.TREASURY_PRIVATE_KEY ? [process.env.TREASURY_PRIVATE_KEY] : [],
-      chainId: 10143,
+    'moca-testnet': {
+      url: process.env.NEXT_PUBLIC_MOCA_TESTNET_RPC || "https://testnet-rpc.mocachain.org/",
+      accounts: process.env.MOCA_TREASURY_PRIVATE_KEY ? [process.env.MOCA_TREASURY_PRIVATE_KEY] : [],
+      chainId: 222888,
       timeout: 120000,
       httpHeaders: {
         "User-Agent": "hardhat"

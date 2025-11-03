@@ -17,7 +17,7 @@ export default function FeatureSection() {
     {
       id: 2,
       title: "Cross-Chain Liquidity",
-      description: "Stake tokens across multiple chains to earn MON tokens while playing your favorite games with minimal slippage.",
+      description: "Stake tokens across multiple chains to earn MOCA tokensns while playing your favorite games with minimal slippage.",
       icon: "⛓️"
     },
     {

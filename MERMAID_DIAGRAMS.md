@@ -20,7 +20,7 @@ graph TB
     
     subgraph API["API Layer"]
         I[Next.js API Routes] --> J[Pyth Entropy Endpoints]
-        I --> K[Deposit/Withdraw MON]
+        I --> K[Deposit/Withdraw MOCA]
         I --> L[Game Logic]
         I --> SAA[Smart Account API]
     end
@@ -177,7 +177,7 @@ graph TB
     subgraph MonadNet["Monad Testnet (Chain ID: 10143)"]
         MT[Monad Testnet] --> MON[MON Token]
         MON --> DEP[Deposit Contract]
-        MON --> WITH[Withdraw Contract]
+        MOCA --> WITH[Withdraw Contract]
         DEP --> TB[Treasury Balance]
         WITH --> TB
         

@@ -5,8 +5,8 @@ export const monadTestnetConfig = {
   network: 'monad-testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'MON',
-    symbol: 'MON',
+    name: 'MOCA'',
+  symbol: 'MOCA'A'A',
   },
   rpcUrls: {
     default: {
@@ -26,10 +26,9 @@ export const monadTestnetConfig = {
 };
 
 export const monadTestnetTokens = {
-  MON: {
+  MOCA: {
     address: 'native',
-    decimals: 18,
-    symbol: 'MON',
+    decimals: 18,symbol: 'MOCA'CA'OCA',
     name: 'Monad',
     isNative: true,
   },

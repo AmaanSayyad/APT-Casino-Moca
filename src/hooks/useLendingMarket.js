@@ -12,8 +12,8 @@ const MOCK_LENDING_DATA = {
       iconColor: '#F1324D'
     },
     {
-      symbol: 'MON',
-      name: 'MON Casino Token',
+      symbol: 'MOCA''',
+      name: 'MOCA Casino Token',
       amount: '500.0',
       apy: '12.5',
       iconColor: '#34C759'

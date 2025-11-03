@@ -31,7 +31,7 @@ class PythEntropyService {
 
   /**
    * Initialize the Pyth Entropy service
-   * @param {string} network - Network name (arbitrum-sepolia, base, etc.)
+   * @param {string} network - Network name (arbitrum-sepolia only)
    */
   async initialize(network = null) {
     try {
@@ -46,33 +46,40 @@ class PythEntropyService {
         throw new Error(`Unsupported network: ${this.network}`);
       }
 
-      console.log('🔮 PYTH ENTROPY: Initializing service...');
+      console.log('🔮 PYTH ENTROPY: Initializing service for backend entropy generation...');
       console.log(`🌐 Network: ${networkConfig.name} (${networkConfig.chainId})`);
+      console.log('ℹ️ Note: This service is for backend entropy generation only');
 
-      // Use treasury wallet for signing instead of user wallet
+      // Use Arbitrum treasury wallet for signing entropy requests
       this.provider = new JsonRpcProvider(networkConfig.rpcUrl);
       
-      // Create treasury wallet for signing transactions
-      if (TREASURY_CONFIG.PRIVATE_KEY) {
-        this.signer = new Wallet(TREASURY_CONFIG.PRIVATE_KEY, this.provider);
-        console.log('🏦 PYTH ENTROPY: Using treasury wallet for signing');
-        console.log(`📍 Treasury address: ${this.signer.address}`);
+      // Create Arbitrum treasury wallet for signing transactions
+      const arbitrumTreasuryKey = process.env.ARBITRUM_TREASURY_PRIVATE_KEY;
+      if (arbitrumTreasuryKey) {
+        this.signer = new Wallet(arbitrumTreasuryKey, this.provider);
+        console.log('🏦 PYTH ENTROPY: Using Arbitrum treasury wallet for signing');
+        console.log(`📍 Arbitrum Treasury address: ${this.signer.address}`);
       } else {
-        console.warn('⚠️ PYTH ENTROPY: Treasury private key not found, using read-only provider');
+        console.warn('⚠️ PYTH ENTROPY: Arbitrum treasury private key not found, using read-only provider');
       }
 
-      // Get contract address for the network
-      const contractAddress = PYTH_ENTROPY_CONFIG.getEntropyContract(this.network);
+      // Get contract address for the network (our Casino Entropy Consumer)
+      const contractAddress = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_CASINO_CONTRACT;
       
-      if (contractAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error(`Pyth Entropy contract not deployed on ${this.network}`);
+      if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
+        throw new Error(`Casino Entropy Consumer contract not deployed on ${this.network}`);
       }
 
-      // Initialize contract
-      console.log(`🔍 DEBUG: Creating contract with address: ${contractAddress}`);
-      console.log(`🔍 DEBUG: ABI length: ${this.contractABI.length}`);
-      console.log(`🔍 DEBUG: Provider:`, !!this.provider);
-      console.log(`🔍 DEBUG: Signer:`, !!this.signer);
+      // Initialize contract with Casino Entropy Consumer ABI
+      this.contractABI = [
+        "function request(bytes32 userRandomNumber) external payable returns (uint64)",
+        "function getRequest(bytes32 requestId) external view returns (tuple(address requester, uint8 gameType, string gameSubType, bool fulfilled, bytes32 randomValue, uint256 timestamp, uint64 sequenceNumber, bytes32 commitment))",
+        "function isRequestFulfilled(bytes32 requestId) external view returns (bool)",
+        "function getRandomValue(bytes32 requestId) external view returns (bytes32)",
+        "function entropyFee() external view returns (uint256)",
+        "event EntropyRequested(bytes32 indexed requestId, uint8 gameType, string gameSubType, address requester)",
+        "event EntropyFulfilled(bytes32 indexed requestId, bytes32 randomValue)"
+      ];
       
       this.contract = new Contract(
         contractAddress,
@@ -80,17 +87,10 @@ class PythEntropyService {
         this.signer || this.provider
       );
 
-      console.log(`🔍 DEBUG: Contract created:`, !!this.contract);
-      console.log(`🔍 DEBUG: Contract methods:`, Object.keys(this.contract));
-      console.log(`🔍 DEBUG: request method:`, !!this.contract.request);
-      console.log(`🔍 DEBUG: request.estimateGas:`, !!this.contract.request?.estimateGas);
-
       this.isInitialized = true;
       console.log('✅ PYTH ENTROPY: Service initialized successfully');
-      console.log(`📋 Contract: ${contractAddress}`);
-      console.log(`📋 Contract instance:`, this.contract);
-      console.log(`📋 Provider:`, this.provider);
-      console.log(`📋 Signer:`, this.signer);
+      console.log(`📋 Casino Entropy Consumer: ${contractAddress}`);
+      console.log(`📋 Network: Arbitrum Sepolia (Backend Only)`);
       
       return true;
     } catch (error) {
@@ -146,8 +146,8 @@ class PythEntropyService {
         gameConfig: gameConfig,
         metadata: {
           source: 'Pyth Entropy (API)',
-          network: 'monad-testnet',
-          algorithm: 'pyth-entropy-hardhat',
+          network: 'arbitrum-sepolia',
+          algorithm: 'pyth-entropy-arbitrum',
           generatedAt: new Date().toISOString()
         }
       };
@@ -173,9 +173,9 @@ class PythEntropyService {
           transactionHash: 'fallback_no_tx',
           blockNumber: null,
           randomValue: Math.floor(Math.random() * 1000000),
-          network: 'monad-testnet',
-          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=monad-testnet',
-          monadExplorerUrl: 'https://testnet.monadexplorer.com/',
+          network: 'arbitrum-sepolia',
+          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia',
+          arbitrumExplorerUrl: 'https://sepolia.arbiscan.io/',
           timestamp: Date.now(),
           source: 'Pyth Entropy (API Fallback)'
         },
@@ -184,7 +184,7 @@ class PythEntropyService {
         gameConfig: gameConfig,
         metadata: {
           source: 'Pyth Entropy (Fallback)',
-          network: 'monad-testnet',
+          network: 'arbitrum-sepolia',
           algorithm: 'fallback',
           generatedAt: new Date().toISOString()
         }
@@ -193,18 +193,18 @@ class PythEntropyService {
   }
 
   /**
-   * Get Monad Explorer URL for transaction
+   * Get Arbitrum Explorer URL for transaction
    * @param {string} txHash - Transaction hash
-   * @returns {string} Monad Explorer URL
+   * @returns {string} Arbitrum Explorer URL
    */
-  getMonadExplorerUrl(txHash) {
-    const network = this.network || 'monad-testnet';
+  getArbitrumExplorerUrl(txHash) {
+    const network = this.network || 'arbitrum-sepolia';
     
-    if (network === 'monad-testnet') {
-      return `https://testnet.monadexplorer.com/tx/${txHash}`;
+    if (network === 'arbitrum-sepolia') {
+      return `https://sepolia.arbiscan.io/tx/${txHash}`;
     }
     
-    return `https://testnet.monadexplorer.com/tx/${txHash}`;
+    return `https://sepolia.arbiscan.io/tx/${txHash}`;
   }
 
   /**

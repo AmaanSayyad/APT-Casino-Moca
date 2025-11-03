@@ -17,7 +17,7 @@ function generateNewTreasury() {
   
   console.log('\n⚠️  IMPORTANT:');
   console.log('1. Save the private key and mnemonic securely');
-  console.log('2. Fund this address with MON tokens for withdrawals');
+  console.log('2. Fund this address with MOCA tokensns for withdrawals');
   console.log('3. Update your .env file with the new address');
   console.log('4. Never share the private key publicly');
 }

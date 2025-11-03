@@ -1,6 +1,6 @@
-# APT Casino - Monad Testnet
+# APT Casino - Moca Chain Testnet
 
-A decentralized casino platform built on Monad Testnet with Pyth Entropy for provably fair gaming and MetaMask Smart Accounts integration.
+A decentralized casino platform built on Moca Chain Testnet with Pyth Entropy for provably fair gaming. Users interact with Moca Chain for deposits/withdrawals while entropy generation happens on Arbitrum Sepolia for maximum security and fairness.
 
 ## 🎮 The Story Behind APT Casino
 
@@ -35,7 +35,7 @@ APT Casino addresses these problems by offering:
 
 - **Multiple Games**: Wheel, Roulette, Plinko, and Mines with verifiable outcomes
 - **MetaMask Smart Accounts**: Enhanced wallet experience with batch transactions
-- **MON Token**: Native currency for Monad Testnet
+- **MOCA Token**: Native currency for Moca Chain Testnet
 - **Flexible Withdrawal**: Unrestricted access to funds
 - **Transparent Bonuses**: Clear terms without hidden traps
 - **True Asset Ownership**: Decentralized asset management
@@ -61,7 +61,7 @@ APT Casino addresses these problems by offering:
 
 ### 3. Multi-Chain Architecture
 
-- **Gaming Network**: Monad Testnet (Chain ID: 10143)
+- **Gaming Network**: Moca Chain Testnet (Chain ID: 222888)
 - **Entropy Network**: Arbitrum Sepolia (Chain ID: 421614)
 
 ### 4. Game Selection
@@ -86,19 +86,19 @@ APT Casino addresses these problems by offering:
 
 ## 🚀 Getting Started
 
-1. **Connect Wallet**: Connect your MetaMask wallet to Monad Testnet
-2. **Get Tokens**: Get MON tokens from the Monad testnet faucet
-3. **Deposit**: Deposit MON to your house balance
+1. **Connect Wallet**: Connect your MetaMask wallet to Moca Chain Testnet
+2. **Get Tokens**: Get MOCA tokens from the Moca Chain testnet faucet
+3. **Deposit**: Deposit MOCA to your house balance
 4. **Play**: Start playing provably fair games!
 
 ### Network Configuration
 
-Add Monad Testnet to MetaMask:
-- **Network Name**: Monad Testnet
-- **RPC URL**: `https://testnet-rpc.monad.xyz`
-- **Chain ID**: `10143`
-- **Currency Symbol**: `MON`
-- **Block Explorer**: `https://testnet.monadexplorer.com`
+Add Moca Chain Testnet to MetaMask:
+- **Network Name**: Moca Chain Testnet
+- **RPC URL**: `https://testnet-rpc.mocachain.org/`
+- **Chain ID**: `222888`
+- **Currency Symbol**: `MOCA`
+- **Block Explorer**: `https://testnet-scan.mocachain.org/`
 
 ## 🔷 Smart Account Features
 
@@ -160,7 +160,7 @@ graph TB
     
     subgraph API["API Layer"]
         I[Next.js API Routes] --> J[Pyth Entropy Endpoints]
-        I --> K[Deposit/Withdraw MON]
+        I --> K[Deposit/Withdraw MOCA]
         I --> L[Game Logic]
         I --> SAA[Smart Account API]
         I --> SC[Socket.IO Chat]
@@ -312,7 +312,7 @@ graph TB
     subgraph MonadNet["Monad Testnet (Chain ID: 10143)"]
         MT[Monad Testnet] --> MON[MON Token]
         MON --> DEP[Deposit Contract]
-        MON --> WITH[Withdraw Contract]
+        MOCA --> WITH[Withdraw Contract]
         DEP --> TB[Treasury Balance]
         WITH --> TB
         
