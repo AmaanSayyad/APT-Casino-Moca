@@ -11,10 +11,10 @@ const MinesHistory = ({ gameHistory = [], userStats = {} }) => {
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
 
-  // Open Monad Explorer link for transaction hash
-  const openMonadExplorer = (hash) => {
+  // Open Moca Explorer link for transaction hash
+  const openMocaExplorer = (hash) => {
     if (hash && hash !== 'unknown') {
-      const explorerUrl = `https://testnet.monadexplorer.com/tx/${hash}`;
+      const explorerUrl = `https://testnet-scan.mocachain.org/tx/${hash}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -22,7 +22,7 @@ const MinesHistory = ({ gameHistory = [], userStats = {} }) => {
   // Open Entropy Explorer link
   const openEntropyExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=monad-testnet&search=${txHash}`;
+      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${txHash}`;
       window.open(entropyExplorerUrl, '_blank');
     }
   };

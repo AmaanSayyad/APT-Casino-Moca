@@ -250,18 +250,10 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
     return redNumbers.includes(num) ? '#d82633' : '#333'; // Red or black
   };
 
-  // Open Monad Explorer link for transaction hash
-  const openMonadExplorer = (hash) => {
+  // Open Moca Explorer link for transaction hash
+  const openMocaExplorer = (hash) => {
     if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'monad-testnet';
-      let explorerUrl;
-      
-      if (network === 'monad-testnet') {
-        explorerUrl = `https://testnet.monadexplorer.com/tx/${hash}`;
-      } else {
-        explorerUrl = `https://testnet.monadexplorer.com/tx/${hash}`;
-      }
-      
+      const explorerUrl = `https://testnet-scan.mocachain.org/tx/${hash}`;
       window.open(explorerUrl, '_blank');
     }
   };

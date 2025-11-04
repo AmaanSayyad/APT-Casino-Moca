@@ -12,18 +12,10 @@ const WheelHistory = ({ gameHistory = [] }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
 
-   // Open Monad Explorer link for transaction hash
-   const openMonadExplorer = (hash) => {
+   // Open Moca Explorer link for transaction hash
+   const openMocaExplorer = (hash) => {
     if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'monad-testnet';
-      let explorerUrl;
-      
-      if (network === 'monad-testnet') {
-        explorerUrl = `https://testnet.monadexplorer.com/tx/${hash}`;
-      } else {
-        explorerUrl = `https://testnet.monadexplorer.com/tx/${hash}`;
-      }
-      
+      const explorerUrl = `https://testnet-scan.mocachain.org/tx/${hash}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -595,7 +587,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           <Button
                             onClick={() => {
                               if (item.entropyProof.transactionHash) {
-                                window.open(`https://entropy-explorer.pyth.network/?chain=monad-testnet&search=${item.entropyProof.transactionHash}`, '_blank');
+                                window.open(`https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${item.entropyProof.transactionHash}`, '_blank');
                               }
                             }}
                             size="small"
@@ -613,27 +605,27 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           >
                             Entropy
                           </Button>
-                          <Button
-                            onClick={() => {
-                              if (item.entropyProof?.transactionHash) {
-                                window.open(`https://testnet.monadexplorer.com/tx/${item.entropyProof.transactionHash}`, '_blank');
-                              }
-                            }}
-                            size="small"
-                            startIcon={<FaExternalLinkAlt size={10} />}
-                            sx={{ 
-                              color: '#8B2398',
-                              fontSize: '0.7rem',
-                              minWidth: 'auto',
-                              p: 0,
-                              '&:hover': {
-                                backgroundColor: 'transparent',
-                                textDecoration: 'underline',
-                              }
-                            }}
-                          >
-                            Monad
-                          </Button>
+                          {item.mocaLogTx && (
+                            <Button
+                              onClick={() => {
+                                window.open(`https://testnet-scan.mocachain.org/tx/${item.mocaLogTx}`, '_blank');
+                              }}
+                              size="small"
+                              startIcon={<FaExternalLinkAlt size={10} />}
+                              sx={{ 
+                                color: '#8B2398',
+                                fontSize: '0.7rem',
+                                minWidth: 'auto',
+                                p: 0,
+                                '&:hover': {
+                                  backgroundColor: 'transparent',
+                                  textDecoration: 'underline',
+                                }
+                              }}
+                            >
+                              MOCA
+                            </Button>
+                          )}
                         </Box>
                         <Typography variant="caption" color="rgba(255,255,255,0.5)">
                           Pyth Entropy

@@ -102,93 +102,7 @@ export default function Home() {
       return;
     }
 
-    // Generate Pyth Entropy in background for provably fair proof
-  const generateEntropyInBackground = async (historyItemId) => {
-    try {
-      console.log('🔮 PYTH ENTROPY: Generating background entropy for Wheel game...');
-      
-      const entropyResult = await pythEntropyService.generateRandom('WHEEL', { 
-        purpose: 'wheel_spin', 
-        gameType: 'WHEEL' 
-      });
-      
-      console.log('✅ PYTH ENTROPY: Background entropy generated successfully');
-      console.log('🔗 Transaction:', entropyResult.entropyProof.transactionHash);
-      
-      // Update the history item with real entropy proof
-      setGameHistory(prev => prev.map(item => 
-        item.id === historyItemId 
-          ? {
-              ...item,
-              entropyProof: {
-                requestId: entropyResult.entropyProof?.requestId,
-                sequenceNumber: entropyResult.entropyProof?.sequenceNumber,
-                randomValue: entropyResult.randomValue,
-                randomNumber: entropyResult.randomValue,
-                transactionHash: entropyResult.entropyProof?.transactionHash,
-                monadExplorerUrl: entropyResult.entropyProof?.monadExplorerUrl,
-                explorerUrl: entropyResult.entropyProof?.explorerUrl,
-                timestamp: entropyResult.entropyProof?.timestamp,
-                source: 'Pyth Entropy'
-              }
-            }
-          : item
-      ));
-      
-      // Get the history item to extract game data
-      const historyItem = gameHistory.find(item => item.id === historyItemId);
-      if (!historyItem) {
-        console.warn('⚠️ WHEEL: History item not found for logging');
-        return;
-      }
-      
-      // Save to history -> triggers MOCA logging via API (same as 0g pattern)
-      try {
-        const saveResult = await saveWheelGame({
-          userAddress: walletAddress || '0x0000000000000000000000000000000000000001',
-          vrfRequestId: entropyResult.entropyProof?.requestId,
-          vrfTransactionHash: entropyResult.entropyProof?.transactionHash,
-          vrfValue: entropyResult.randomValue,
-          gameConfig: { segments: noOfSegments, riskLevel: risk },
-          resultData: { 
-            segment: 0, 
-            multiplier: currentMultiplier || 0, 
-            color: historyItem.color || "#333947", 
-            totalSegments: noOfSegments 
-          },
-          betAmount: String(betAmount || 0),
-          payoutAmount: String(currentMultiplier > 0 ? (betAmount * currentMultiplier) : 0),
-          clientBetId: historyItemId.toString()
-        });
-        
-        console.log('💾 Wheel saved to history (triggers MOCA):', saveResult);
-        
-        // Update game history with MOCA network log info
-        if (saveResult && saveResult.mocaNetworkLog) {
-          setGameHistory(prev => {
-            return prev.map(item => 
-              item.id === historyItemId 
-                ? { 
-                    ...item, 
-                    mocaNetworkLog: saveResult.mocaNetworkLog,
-                    mocaLogTx: saveResult.mocaNetworkLog?.transactionHash,
-                    mocaGameId: saveResult.gameId,
-                    mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl
-                  }
-                : item
-            );
-          });
-        }
-      } catch (e) {
-        console.warn('saveWheelGame failed:', e);
-      }
-      
-    } catch (error) {
-      console.error('❌ PYTH ENTROPY: Background generation failed:', error);
-    }
-  };
-
-    // Check Redux balance (balance is already in MOCA)A)
+    // Check Redux balance (balance is already in MOCA)
     const currentBalance = parseFloat(userBalance || '0');
     
     if (currentBalance < betAmount) {
@@ -253,19 +167,6 @@ export default function Home() {
             color: detectedColor
           };
 
-          // Add temporary entropy proof (will be updated by background process)
-          newHistoryItem.entropyProof = {
-            requestId: 'generating_' + Date.now(),
-            sequenceNumber: Date.now().toString(),
-            randomValue: Math.floor(Math.random() * 1000000),
-            randomNumber: Math.floor(Math.random() * 1000000),
-            transactionHash: 'generating...',
-            monadExplorerUrl: 'https://testnet.monadexplorer.com/',
-            explorerUrl: 'https://entropy-explorer.pyth.network/?chain=monad-testnet',
-            timestamp: Date.now(),
-            source: 'Generating...'
-          };
-
           setGameHistory(prev => [newHistoryItem, ...prev]);
           
           setIsSpinning(false);
@@ -290,9 +191,90 @@ export default function Home() {
             notification.info(`Game over. Multiplier: ${actualMultiplier.toFixed(2)}x`);
           }
 
-          // Generate Pyth Entropy in background for provably fair proof
-          generateEntropyInBackground(newHistoryItem.id).catch(error => {
-            console.error('❌ Background entropy generation failed:', error);
+          // Generate Pyth Entropy and save to MOCA (same pattern as Roulette)
+          pythEntropyService.generateRandom('WHEEL', {
+            purpose: 'wheel_spin',
+            gameType: 'WHEEL'
+          }).then(entropyResult => {
+            console.log('🔮 PYTH ENTROPY: Wheel randomness generated:', entropyResult);
+            
+            // Add Pyth Entropy proof info to the history item
+            const entropyProof = {
+              requestId: entropyResult.entropyProof?.requestId,
+              sequenceNumber: entropyResult.entropyProof?.sequenceNumber,
+              randomValue: entropyResult.randomValue,
+              transactionHash: entropyResult.entropyProof?.transactionHash,
+              explorerUrl: entropyResult.entropyProof?.explorerUrl,
+              timestamp: entropyResult.entropyProof?.timestamp,
+              source: 'Pyth Entropy'
+            };
+            
+            // Update history with entropy proof
+            setGameHistory(prev => prev.map(item => 
+              item.id === newHistoryItem.id 
+                ? { ...item, entropyProof: entropyProof }
+                : item
+            ));
+            
+            // Save to history -> triggers MOCA logging via API (same as 0g pattern)
+            try {
+              saveWheelGame({
+                userAddress: walletAddress || '0x0000000000000000000000000000000000000001',
+                vrfRequestId: entropyResult.entropyProof?.requestId,
+                vrfTransactionHash: entropyResult.entropyProof?.transactionHash,
+                vrfValue: entropyResult.randomValue,
+                gameConfig: { segments: noOfSegments, riskLevel: risk },
+                resultData: { 
+                  segment: 0, 
+                  multiplier: actualMultiplier, 
+                  color: detectedColor, 
+                  totalSegments: noOfSegments 
+                },
+                betAmount: String(betAmount),
+                payoutAmount: String(winAmount),
+                clientBetId: newHistoryItem.id.toString()
+              }).then((saveResult) => {
+                console.log('💾 Wheel saved to history (triggers MOCA):', saveResult);
+                console.log('🔍 MOCA Network Log:', saveResult?.mocaNetworkLog);
+                console.log('🔍 Transaction Hash:', saveResult?.mocaNetworkLog?.transactionHash);
+                
+                // Update game history with MOCA network log info
+                if (saveResult) {
+                  const mocaTxHash = saveResult.mocaNetworkLog?.transactionHash;
+                  
+                  if (mocaTxHash || saveResult.mocaNetworkLog) {
+                    console.log('✅ Updating wheel history with MOCA log:', mocaTxHash);
+                    setGameHistory(prev => {
+                      const updated = prev.map(item => 
+                        item.id === newHistoryItem.id 
+                          ? { 
+                              ...item, 
+                              mocaNetworkLog: saveResult.mocaNetworkLog || {},
+                              mocaLogTx: mocaTxHash || saveResult.mocaNetworkLog?.transactionHash,
+                              mocaGameId: saveResult.gameId,
+                              mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl || 
+                                             (mocaTxHash ? `https://testnet-scan.mocachain.org/tx/${mocaTxHash}` : null)
+                            }
+                          : item
+                      );
+                      const updatedItem = updated.find(item => item.id === newHistoryItem.id);
+                      console.log('🔄 Updated history item:', updatedItem ? {
+                        id: updatedItem.id,
+                        mocaLogTx: updatedItem.mocaLogTx,
+                        hasMocaNetworkLog: !!updatedItem.mocaNetworkLog
+                      } : 'NOT FOUND');
+                      return updated;
+                    });
+                  } else {
+                    console.warn('⚠️ No MOCA transaction hash found in saveResult for wheel');
+                  }
+                }
+              }).catch((e) => console.warn('Save history failed:', e));
+            } catch (e) {
+              console.warn('saveWheelGame threw:', e);
+            }
+          }).catch(error => {
+            console.error('❌ PYTH ENTROPY: Error processing Wheel game:', error);
           });
           
           // Clean up callback

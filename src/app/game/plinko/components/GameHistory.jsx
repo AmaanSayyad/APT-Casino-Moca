@@ -8,16 +8,16 @@ export default function GameHistory({ history }) {
   // Open Entropy Explorer link
   const openEntropyExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=monad-testnet&search=${txHash}`;
+      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${txHash}`;
       window.open(entropyExplorerUrl, '_blank');
     }
   };
 
-  // Open Monad Explorer link
-  const openMonadExplorer = (txHash) => {
+  // Open Moca Explorer link
+  const openMocaExplorer = (txHash) => {
     if (txHash) {
-      const monadExplorerUrl = `https://testnet.monadexplorer.com/tx/${txHash}`;
-      window.open(monadExplorerUrl, '_blank');
+      const mocaExplorerUrl = `https://testnet-scan.mocachain.org/tx/${txHash}`;
+      window.open(mocaExplorerUrl, '_blank');
     }
   };
 

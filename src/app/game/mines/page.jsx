@@ -116,7 +116,7 @@ export default function Mines() {
   const handleFormSubmit = async (formData) => {
     try {
       console.log('🔮 PYTH ENTROPY: Initializing Mines game session...');
-      console.log('🔗 Network: Monad Network | Token: MON | Protocol: Pyth Entropy');
+      console.log('🔗 Network: Moca Chain | Token: MOCA | Protocol: Pyth Entropy');
       
       // Initialize Pyth Entropy
       console.log('🔮 PYTH ENTROPY: Initializing...');
