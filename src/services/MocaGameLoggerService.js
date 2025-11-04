@@ -288,56 +288,74 @@ class MocaGameLoggerService {
   async handleTransactionSuccess(tx, gameId, gameType) {
     console.log('📤 MOCA CONTRACT LOGGER: Transaction sent:', tx.hash);
 
-    // Wait for confirmation
-    const receipt = await tx.wait();
-    
-    console.log('✅ MOCA CONTRACT LOGGER: Game result logged successfully');
-    console.log(`🔗 Transaction: ${tx.hash}`);
-    console.log(`📦 Block: ${receipt.blockNumber}`);
-    console.log(`⛽ Gas Used: ${receipt.gasUsed.toString()}`);
-
-    // Parse events
-    const gameLoggedEvent = receipt.logs.find(log => {
-      try {
-        const parsed = this.contract.interface.parseLog(log);
-        return parsed && parsed.name === 'GameLogged';
-      } catch {
-        return false;
-      }
-    });
-
-    let eventData = null;
-    if (gameLoggedEvent) {
-      try {
-        const parsed = this.contract.interface.parseLog(gameLoggedEvent);
-        eventData = {
-          gameId: parsed.args.gameId,
-          gameType: parsed.args.gameType,
-          userAddress: parsed.args.userAddress,
-          betAmount: parsed.args.betAmount.toString(),
-          payoutAmount: parsed.args.payoutAmount.toString(),
-          isWin: parsed.args.isWin,
-          timestamp: parsed.args.timestamp.toString()
-        };
-        console.log('📊 MOCA CONTRACT LOGGER: Event data:', eventData);
-      } catch (error) {
-        console.warn('⚠️ MOCA CONTRACT LOGGER: Failed to parse event:', error);
-      }
-    }
-
-    return {
+    // Return immediately with transaction hash so frontend can update UI
+    // Then wait for confirmation in background
+    const result = {
       success: true,
       gameId: gameId,
       gameType: gameType,
       transactionHash: tx.hash,
-      blockNumber: receipt.blockNumber.toString(),
-      gasUsed: receipt.gasUsed.toString(),
+      blockNumber: null,
+      gasUsed: null,
       mocaExplorerUrl: `${this.networkConfig.explorerUrl}/tx/${tx.hash}`,
       contractAddress: this.contractAddress,
-      eventData: eventData,
+      eventData: null,
       network: 'moca-testnet',
-      timestamp: Math.floor(Date.now() / 1000)
+      timestamp: Math.floor(Date.now() / 1000),
+      pending: true // Mark as pending until confirmed
     };
+
+    // Wait for confirmation in background (don't block)
+    tx.wait()
+      .then((receipt) => {
+        console.log('✅ MOCA CONTRACT LOGGER: Transaction confirmed');
+        console.log(`🔗 Transaction: ${tx.hash}`);
+        console.log(`📦 Block: ${receipt.blockNumber}`);
+        console.log(`⛽ Gas Used: ${receipt.gasUsed.toString()}`);
+
+        // Parse events
+        const gameLoggedEvent = receipt.logs.find(log => {
+          try {
+            const parsed = this.contract.interface.parseLog(log);
+            return parsed && parsed.name === 'GameLogged';
+          } catch {
+            return false;
+          }
+        });
+
+        let eventData = null;
+        if (gameLoggedEvent) {
+          try {
+            const parsed = this.contract.interface.parseLog(gameLoggedEvent);
+            eventData = {
+              gameId: parsed.args.gameId,
+              gameType: parsed.args.gameType,
+              userAddress: parsed.args.userAddress,
+              betAmount: parsed.args.betAmount.toString(),
+              payoutAmount: parsed.args.payoutAmount.toString(),
+              isWin: parsed.args.isWin,
+              timestamp: parsed.args.timestamp.toString()
+            };
+            console.log('📊 MOCA CONTRACT LOGGER: Event data:', eventData);
+          } catch (error) {
+            console.warn('⚠️ MOCA CONTRACT LOGGER: Failed to parse event:', error);
+          }
+        }
+
+        // Update result with confirmed data (but we've already returned, so this is just for logging)
+        result.blockNumber = receipt.blockNumber.toString();
+        result.gasUsed = receipt.gasUsed.toString();
+        result.eventData = eventData;
+        result.pending = false;
+      })
+      .catch((error) => {
+        console.warn('⚠️ MOCA CONTRACT LOGGER: Transaction confirmation failed (but tx was sent):', error.message);
+        // Transaction was sent, so we still return success
+        result.pending = false;
+      });
+
+    // Return immediately with transaction hash
+    return result;
   }
 
   /**

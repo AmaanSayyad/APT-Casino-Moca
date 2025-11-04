@@ -2079,22 +2079,32 @@ export default function GameRoulette() {
               clientBetId: newBet.id.toString()
             }).then((saveResult) => {
               console.log('💾 Roulette saved to history (triggers MOCA):', saveResult);
+              console.log('🔍 MOCA Network Log:', saveResult?.mocaNetworkLog);
+              console.log('🔍 Transaction Hash:', saveResult?.mocaNetworkLog?.transactionHash);
               
               // Update the betting history with MOCA network log info
-              if (saveResult && saveResult.mocaNetworkLog) {
-                setBettingHistory(prev => {
-                  const updatedHistory = [...prev];
-                  if (updatedHistory.length > 0) {
-                    updatedHistory[0] = { 
-                      ...updatedHistory[0], 
-                      mocaNetworkLog: saveResult.mocaNetworkLog,
-                      mocaLogTx: saveResult.mocaNetworkLog?.transactionHash,
-                      mocaGameId: saveResult.gameId,
-                      mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl
-                    };
-                  }
-                  return updatedHistory;
-                });
+              if (saveResult) {
+                const mocaTxHash = saveResult.mocaNetworkLog?.transactionHash || saveResult.mocaNetworkLog?.transactionHash;
+                
+                if (mocaTxHash || saveResult.mocaNetworkLog) {
+                  console.log('✅ Updating history with MOCA log:', mocaTxHash);
+                  setBettingHistory(prev => {
+                    const updatedHistory = [...prev];
+                    if (updatedHistory.length > 0) {
+                      updatedHistory[0] = { 
+                        ...updatedHistory[0], 
+                        mocaNetworkLog: saveResult.mocaNetworkLog || {},
+                        mocaLogTx: mocaTxHash || saveResult.mocaNetworkLog?.transactionHash,
+                        mocaGameId: saveResult.gameId,
+                        mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl || 
+                                       (mocaTxHash ? `https://testnet-scan.mocachain.org/tx/${mocaTxHash}` : null)
+                      };
+                    }
+                    return updatedHistory;
+                  });
+                } else {
+                  console.warn('⚠️ No MOCA transaction hash found in saveResult');
+                }
               }
             }).catch((e) => console.warn('Save history failed:', e));
           } catch (e) {

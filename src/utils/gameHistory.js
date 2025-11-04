@@ -120,28 +120,35 @@ export const saveGameResult = async (gameData) => {
     console.log('🎮 Moca Chain logging result:', mocaResult);
     
     // Add Moca transaction info to the result
+    // If transaction hash exists, it means transaction was sent (even if not confirmed yet)
+    const hasTransactionHash = mocaResult?.transactionHash || mocaResult?.txHash;
+    const isSuccess = mocaResult?.success === true || hasTransactionHash;
+    
     const finalResult = {
       success: true,
       gameId: gameId,
       vrfDetails: data.data.vrfDetails,
-      mocaNetworkLog: mocaResult.success ? {
-        transactionHash: mocaResult.transactionHash,
-        blockNumber: mocaResult.blockNumber,
-        mocaExplorerUrl: mocaResult.mocaExplorerUrl,
-        network: mocaResult.network,
+      mocaNetworkLog: isSuccess && hasTransactionHash ? {
+        transactionHash: mocaResult.transactionHash || mocaResult.txHash,
+        blockNumber: mocaResult.blockNumber || null,
+        mocaExplorerUrl: mocaResult.mocaExplorerUrl || 
+                        (mocaResult.transactionHash ? `${mocaResult.network === 'moca-testnet' ? 'https://testnet-scan.mocachain.org' : 'https://scan.mocachain.org'}/tx/${mocaResult.transactionHash}` : null) ||
+                        (mocaResult.txHash ? `${mocaResult.network === 'moca-testnet' ? 'https://testnet-scan.mocachain.org' : 'https://scan.mocachain.org'}/tx/${mocaResult.txHash}` : null),
+        network: mocaResult.network || 'moca-testnet',
         gameType: mocaResult.gameType,
-        timestamp: mocaResult.timestamp
+        timestamp: mocaResult.timestamp || Math.floor(Date.now() / 1000),
+        pending: mocaResult.pending || (!mocaResult.blockNumber && hasTransactionHash)
       } : {
         failed: true,
-        error: mocaResult.error
+        error: mocaResult.error || 'Unknown error'
       },
       message: 'Game result saved with VRF verification and Moca Chain logging'
     };
 
-    if (mocaResult.success) {
-      console.log('✅ Game result logged to Moca Chain:', mocaResult.transactionHash);
+    if (hasTransactionHash) {
+      console.log('✅ Game result logged to Moca Chain:', mocaResult.transactionHash || mocaResult.txHash);
     } else {
-      console.warn('⚠️ Failed to log to Moca Chain:', mocaResult.error);
+      console.warn('⚠️ Failed to log to Moca Chain:', mocaResult.error || 'No transaction hash');
     }
 
     return finalResult;
