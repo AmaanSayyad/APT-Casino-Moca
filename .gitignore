@@ -5,13 +5,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+env.md
 # Next.js
 .next/
 out/
 build/
 dist/
-
+APT-Casino-0g-main
 # Environment variables
 .env
 .env.local

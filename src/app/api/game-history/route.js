@@ -12,47 +12,125 @@ export async function GET(request) {
     console.log('📜 API: Getting game history...', { player, gameType, limit, offset });
 
     let games = [];
-    let stats = null;
+    let stats = {
+      totalGames: '0',
+      totalBetAmount: '0.0',
+      totalWinAmount: '0.0',
+      houseEdge: '0.00%'
+    };
 
     try {
-      // Initialize service first
+      // Initialize service
       await mocaGameLoggerService.initialize();
+      console.log('✅ API: Service initialized for game history retrieval');
 
+      let gameIds = [];
+
+      // Get games based on filters
       if (player && ethers.isAddress(player)) {
-        // Get player-specific history
-        games = await mocaGameLoggerService.getPlayerGameHistory(player, offset, limit);
+        // Get user's games
+        gameIds = await mocaGameLoggerService.getUserGames(player, offset, limit);
+        console.log(`📊 API: Found ${gameIds.length} games for player ${player}`);
+      } else if (gameType) {
+        // Get games by type
+        gameIds = await mocaGameLoggerService.getGamesByType(gameType.toUpperCase(), offset, limit);
+        console.log(`📊 API: Found ${gameIds.length} ${gameType} games`);
       } else {
         // Get recent games
-        games = await mocaGameLoggerService.getRecentGames(limit);
+        gameIds = await mocaGameLoggerService.getRecentGames(offset, limit);
+        console.log(`📊 API: Found ${gameIds.length} recent games`);
       }
 
-      // Filter by game type if specified
-      if (gameType && ['MINES', 'PLINKO', 'ROULETTE', 'WHEEL'].includes(gameType.toUpperCase())) {
-        games = games.filter(game => game.gameType.toLowerCase() === gameType.toLowerCase());
-      }
+      // Fetch detailed game data for each game ID
+      const gamePromises = gameIds.map(async (gameId) => {
+        try {
+          const gameLog = await mocaGameLoggerService.getGameLog(gameId);
+          
+          // Convert wei amounts to ether for display
+          const betAmountEth = ethers.formatEther(gameLog.betAmount);
+          const payoutAmountEth = ethers.formatEther(gameLog.payoutAmount);
+          const profitLoss = parseFloat(payoutAmountEth) - parseFloat(betAmountEth);
 
-      // Get game statistics (with error handling)
-      try {
-        stats = await mocaGameLoggerService.getGameStats();
-      } catch (statsError) {
-        console.warn('⚠️ API: Could not get stats:', statsError.message);
+          // Try to get transaction hash from events if available
+          // For now, we'll use the block number to construct a way to find the tx
+          // In a real implementation, you might want to index events
+          const mocaTransactionHash = gameLog.entropyProof?.transactionHash || null;
+          const explorerUrl = mocaTransactionHash 
+            ? mocaGameLoggerService.getExplorerUrl(mocaTransactionHash)
+            : mocaGameLoggerService.getExplorerUrl('');
+          
+          return {
+            id: gameLog.gameId,
+            gameId: gameLog.gameId,
+            gameType: gameLog.gameType,
+            userAddress: gameLog.userAddress,
+            betAmount: betAmountEth,
+            payoutAmount: payoutAmountEth,
+            profitLoss: profitLoss.toFixed(6),
+            isWin: gameLog.isWin,
+            gameConfig: gameLog.gameConfig,
+            resultData: gameLog.resultData,
+            entropyProof: gameLog.entropyProof,
+            timestamp: parseInt(gameLog.timestamp) * 1000, // Convert to milliseconds
+            blockNumber: gameLog.blockNumber,
+            createdAt: new Date(parseInt(gameLog.timestamp) * 1000).toISOString(),
+            mocaTransactionHash: mocaTransactionHash,
+            mocaExplorerUrl: explorerUrl,
+            mocaNetworkLog: mocaTransactionHash ? {
+              transactionHash: mocaTransactionHash,
+              blockNumber: gameLog.blockNumber,
+              mocaExplorerUrl: explorerUrl,
+              network: 'moca-testnet',
+              timestamp: gameLog.timestamp
+            } : null,
+            verifiable: true,
+            verificationNote: "This result was logged on Moca Chain - verifiable on-chain"
+          };
+        } catch (error) {
+          console.warn(`⚠️ API: Failed to get details for game ${gameId}:`, error.message);
+          return null;
+        }
+      });
+
+      // Wait for all game details and filter out failed ones
+      const gameResults = await Promise.all(gamePromises);
+      games = gameResults.filter(game => game !== null);
+
+      // Calculate statistics
+      if (games.length > 0) {
+        let totalBetAmount = 0;
+        let totalWinAmount = 0;
+        let totalWins = 0;
+
+        games.forEach(game => {
+          totalBetAmount += parseFloat(game.betAmount);
+          totalWinAmount += parseFloat(game.payoutAmount);
+          if (game.isWin) totalWins++;
+        });
+
+        const houseEdge = totalBetAmount > 0 ? 
+          ((totalBetAmount - totalWinAmount) / totalBetAmount * 100) : 0;
+
         stats = {
-          totalGames: '0',
-          totalBetAmount: '0.0',
-          totalWinAmount: '0.0',
-          houseEdge: '0.00%'
+          totalGames: games.length.toString(),
+          totalBetAmount: totalBetAmount.toFixed(6),
+          totalWinAmount: totalWinAmount.toFixed(6),
+          houseEdge: `${houseEdge.toFixed(2)}%`,
+          winRate: `${((totalWins / games.length) * 100).toFixed(2)}%`
         };
       }
 
+      // Get additional stats from contract
+      try {
+        const contractStats = await mocaGameLoggerService.getLoggerStats();
+        stats.contractStats = contractStats;
+      } catch (error) {
+        console.warn('⚠️ API: Failed to get contract stats:', error.message);
+      }
+
     } catch (serviceError) {
-      console.warn('⚠️ API: Service error, returning empty results:', serviceError.message);
-      games = [];
-      stats = {
-        totalGames: '0',
-        totalBetAmount: '0.0',
-        totalWinAmount: '0.0',
-        houseEdge: '0.00%'
-      };
+      console.warn('⚠️ API: Service error:', serviceError.message);
+      // Return empty results but don't fail the request
     }
 
     console.log(`✅ API: Retrieved ${games.length} games`);
@@ -67,7 +145,7 @@ export async function GET(request) {
         total: games.length,
         hasMore: games.length === limit
       },
-      contractInfo: mocaGameLoggerService.getContractInfo()
+      serviceInfo: mocaGameLoggerService.getServiceInfo()
     });
 
   } catch (error) {
@@ -95,7 +173,7 @@ export async function POST(request) {
     const gameResult = await request.json();
     
     // Validate required fields
-    const requiredFields = ['player', 'gameType', 'betAmount', 'won'];
+    const requiredFields = ['gameType', 'userAddress', 'betAmount', 'payoutAmount'];
     for (const field of requiredFields) {
       if (gameResult[field] === undefined || gameResult[field] === null) {
         return Response.json({
@@ -105,19 +183,19 @@ export async function POST(request) {
       }
     }
 
-    // Validate player address
-    if (!ethers.isAddress(gameResult.player)) {
-      return Response.json({
-        success: false,
-        error: 'Invalid player address format'
-      }, { status: 400 });
-    }
-
     // Validate game type
     if (!['MINES', 'PLINKO', 'ROULETTE', 'WHEEL'].includes(gameResult.gameType.toUpperCase())) {
       return Response.json({
         success: false,
         error: 'Invalid game type. Must be MINES, PLINKO, ROULETTE, or WHEEL'
+      }, { status: 400 });
+    }
+
+    // Validate Ethereum address
+    if (!ethers.isAddress(gameResult.userAddress)) {
+      return Response.json({
+        success: false,
+        error: 'Invalid user address format'
       }, { status: 400 });
     }
 
@@ -162,11 +240,15 @@ export async function POST(request) {
       return Response.json({
         success: true,
         gameId: result.gameId,
+        gameType: result.gameType,
         transactionHash: result.transactionHash,
-        mocaExplorerUrl: result.mocaExplorerUrl,
         blockNumber: result.blockNumber,
         gasUsed: result.gasUsed,
-        attempts: attempts
+        mocaExplorerUrl: result.mocaExplorerUrl,
+        contractAddress: result.contractAddress,
+        eventData: result.eventData,
+        attempts: attempts,
+        network: result.network
       });
     } else {
       throw new Error(result.error || 'Failed to log game result');
@@ -182,3 +264,8 @@ export async function POST(request) {
     }, { status: 500 });
   }
 }
+
+// Ensure Node.js runtime and no caching for this route
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;

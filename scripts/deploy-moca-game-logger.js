@@ -1,83 +1,79 @@
-const { ethers } = require("hardhat");
-const fs = require('fs');
-const path = require('path');
+const { ethers } = require('hardhat');
+require('dotenv').config();
 
 async function main() {
-  console.log("🚀 Deploying MocaGameLogger to Moca Chain Testnet...");
+  console.log('🚀 Deploying MocaGameLogger contract to Moca Chain...');
 
   // Get the treasury address from environment
   const treasuryAddress = process.env.MOCA_TREASURY_ADDRESS || process.env.TREASURY_ADDRESS;
   
   if (!treasuryAddress) {
-    throw new Error("Treasury address not found in environment variables");
+    throw new Error('Treasury address not found in environment variables');
   }
 
-  console.log("📍 Treasury address:", treasuryAddress);
+  console.log('🏦 Treasury address:', treasuryAddress);
+
+  // Get signer
+  const [signer] = await ethers.getSigners();
+  console.log('📍 Signer address:', signer.address);
+
+  // Get provider and check balance
+  const provider = signer.provider;
+  const balance = await provider.getBalance(signer.address);
+  console.log('💰 Signer balance:', ethers.formatEther(balance), 'MOCA');
+  
+  if (balance === 0n) {
+    throw new Error('Insufficient balance for deployment. Please fund the treasury wallet.');
+  }
 
   // Get the contract factory
-  const MocaGameLogger = await ethers.getContractFactory("MocaGameLogger");
+  const MocaGameLogger = await ethers.getContractFactory('MocaGameLogger');
 
-  // Deploy the contract
-  console.log("⏳ Deploying contract...");
-  const mocaGameLogger = await MocaGameLogger.deploy(treasuryAddress);
+  // Deploy the contract - let ethers handle nonce automatically
+  console.log('📝 Deploying contract...');
+  const mocaGameLogger = await MocaGameLogger.deploy(treasuryAddress, {
+    gasLimit: 3000000,
+    gasPrice: ethers.parseUnits('1', 'gwei') // Much lower gas price for MOCA
+  });
 
   // Wait for deployment
+  console.log('⏳ Waiting for deployment confirmation...');
   await mocaGameLogger.waitForDeployment();
-  const contractAddress = await mocaGameLogger.getAddress();
-
-  console.log("✅ MocaGameLogger deployed successfully!");
-  console.log("📍 Contract address:", contractAddress);
-  console.log("🏦 Treasury address:", treasuryAddress);
-
-  // Get deployment transaction
-  const deploymentTx = mocaGameLogger.deploymentTransaction();
-  console.log("🔗 Deployment transaction:", deploymentTx.hash);
-
-  // Verify contract info
-  const contractInfo = await mocaGameLogger.getContractInfo();
-  console.log("📋 Contract verification:");
-  console.log("- Contract address:", contractInfo.contractAddress);
-  console.log("- Treasury address:", contractInfo.treasuryAddress);
-  console.log("- Total games:", contractInfo.totalGamesCount.toString());
-
-  // Save deployment info
-  const deploymentInfo = {
-    network: "moca-testnet",
-    chainId: "222888",
-    contractName: "MocaGameLogger",
-    contractAddress: contractAddress,
-    treasuryAddress: treasuryAddress,
-    deployer: treasuryAddress,
-    deploymentTime: new Date().toISOString(),
-    transactionHash: deploymentTx.hash,
-    blockNumber: deploymentTx.blockNumber?.toString() || "pending"
-  };
-
-  // Create deployments directory if it doesn't exist
-  const deploymentsDir = path.join(__dirname, '..', 'deployments');
-  if (!fs.existsSync(deploymentsDir)) {
-    fs.mkdirSync(deploymentsDir, { recursive: true });
-  }
-
-  // Save deployment info to file
-  const filename = `moca-game-logger-${Date.now()}.json`;
-  const filepath = path.join(deploymentsDir, filename);
-  fs.writeFileSync(filepath, JSON.stringify(deploymentInfo, null, 2));
-
-  console.log("💾 Deployment info saved to:", filename);
-  console.log("\n🎯 Next steps:");
-  console.log("1. Update .env file with the contract address:");
-  console.log(`   NEXT_PUBLIC_MOCA_GAME_LOGGER_CONTRACT=${contractAddress}`);
-  console.log("2. Verify the contract on Moca Chain explorer");
-  console.log("3. Test game logging functionality");
   
-  console.log("\n🔗 Moca Chain Testnet Explorer:");
-  console.log(`https://testnet-scan.mocachain.org/address/${contractAddress}`);
+  const contractAddress = await mocaGameLogger.getAddress();
+  console.log('✅ MocaGameLogger deployed to:', contractAddress);
+
+  // Verify deployment
+  console.log('🔍 Verifying deployment...');
+  const contractInfo = await mocaGameLogger.getContractInfo();
+  console.log('📋 Contract Info:');
+  console.log('  - Contract Address:', contractInfo.contractAddress);
+  console.log('  - Treasury Address:', contractInfo.treasuryAddress);
+  console.log('  - Total Logs:', contractInfo.totalLogsCount.toString());
+
+  console.log('\n🎉 Deployment completed successfully!');
+  console.log('\n📋 Summary:');
+  console.log('  - Contract Address:', contractAddress);
+  console.log('  - Network: Moca Chain Testnet');
+  console.log('  - Treasury Address:', treasuryAddress);
+  console.log('  - Explorer URL: https://testnet-scan.mocachain.org/address/' + contractAddress);
+  
+  console.log('\n🔧 Next steps:');
+  console.log('1. Update .env file with contract address:');
+  console.log(`   NEXT_PUBLIC_MOCA_GAME_LOGGER_CONTRACT=${contractAddress}`);
+  console.log('2. Restart your application to use the new contract');
+  console.log('3. Test game logging through the API endpoints');
+
+  return contractAddress;
 }
 
+// Execute deployment
 main()
-  .then(() => process.exit(0))
+  .then((contractAddress) => {
+    console.log('\n✅ Deployment script completed successfully');
+    process.exit(0);
+  })
   .catch((error) => {
-    console.error("❌ Deployment failed:", error);
+    console.error('\n❌ Deployment failed:', error);
     process.exit(1);
   });

@@ -15,6 +15,7 @@ import { Typography } from "@mui/material";
 import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
 import { FaPercentage, FaBalanceScale, FaChartLine, FaCoins, FaTrophy, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
 import pythEntropyService from '../../../services/PythEntropyService';
+import { useGameHistory } from '@/hooks/useGameHistory';
 
 export default function Plinko() {
   const userBalance = useSelector((state) => state.balance.userBalance);
@@ -25,6 +26,9 @@ export default function Plinko() {
   const [currentBetAmount, setCurrentBetAmount] = useState(0);
   const [gameHistory, setGameHistory] = useState([]);
   const [showMobileWarning, setShowMobileWarning] = useState(false);
+
+  // Game history hook for MOCA logging
+  const { savePlinkoGame } = useGameHistory();
 
   const plinkoGameRef = useRef(null);
 
@@ -224,106 +228,42 @@ export default function Plinko() {
       };
       
       console.log('📝 Enhanced bet result:', enhancedBetResult);
-      console.log('🎮 PLINKO: currentBetAmount:', currentBetAmount);
-      console.log('🎮 PLINKO: newBetResult.betAmount:', newBetResult.betAmount);
       setGameHistory(prev => [enhancedBetResult, ...prev].slice(0, 100)); // Keep up to last 100 entries
-      
-      // Log game result to Moca Chain (non-blocking)
-      try {
-        // Ensure we have a valid bet amount
-        console.log('🔍 PLINKO: Bet amount debugging:', {
-          currentBetAmount,
-          'newBetResult.betAmount': newBetResult.betAmount,
-          'parseFloat(newBetResult.betAmount)': parseFloat(newBetResult.betAmount),
-          'parseFloat(newBetResult.betAmount) > 0': parseFloat(newBetResult.betAmount) > 0
-        });
-        
-        let validBetAmount = 0.001; // Default fallback
-        
-        // Try to use newBetResult.betAmount first
-        if (newBetResult.betAmount && parseFloat(newBetResult.betAmount) > 0) {
-          validBetAmount = parseFloat(newBetResult.betAmount);
-          console.log('🔍 PLINKO: Using newBetResult.betAmount:', validBetAmount);
-        } 
-        // Fallback to currentBetAmount if it's valid
-        else if (currentBetAmount && parseFloat(currentBetAmount) > 0) {
-          validBetAmount = parseFloat(currentBetAmount);
-          console.log('🔍 PLINKO: Using currentBetAmount:', validBetAmount);
-        }
-        
-        console.log('🔍 PLINKO: Final validBetAmount:', validBetAmount);
-        
-        const gameData = {
-          player: walletAddress || '0x0000000000000000000000000000000000000000',
-          gameType: 'PLINKO',
-          gameSubType: currentRiskLevel.toLowerCase(),
-          betAmount: validBetAmount.toString(),
-          won: enhancedBetResult.payout > 0,
-          winAmount: enhancedBetResult.payout.toString(),
-          multiplier: enhancedBetResult.multiplier.toString(),
-          entropyTxHash: randomData.entropyProof?.transactionHash,
-          entropySequenceNumber: randomData.entropyProof?.sequenceNumber || 0,
-          randomValue: randomData.randomValue,
-          gameData: JSON.stringify({
-            rows: currentRows,
-            riskLevel: currentRiskLevel,
-            ballPath: enhancedBetResult.ballPath,
-            finalSlot: enhancedBetResult.finalSlot
-          })
-        };
 
-        console.log('🎮 PLINKO: Attempting to log to Moca Chain via API...', {
-          player: walletAddress || '0x0000000000000000000000000000000000000000',
-          gameType: 'PLINKO',
-          gameSubType: currentRiskLevel.toLowerCase(),
-          betAmount: validBetAmount.toString(),
-          won: enhancedBetResult.payout > 0,
-          winAmount: enhancedBetResult.payout.toString(),
-          multiplier: enhancedBetResult.multiplier.toString()
+      // Save to history -> triggers MOCA logging via API (same as 0g pattern)
+      try {
+        const saveResult = await savePlinkoGame({
+          userAddress: walletAddress || '0x0000000000000000000000000000000000000001',
+          vrfRequestId: enhancedBetResult.entropyProof?.requestId,
+          vrfTransactionHash: enhancedBetResult.entropyProof?.transactionHash,
+          vrfValue: enhancedBetResult.entropyProof?.randomValue,
+          gameConfig: { rows: currentRows, risk: currentRiskLevel },
+          resultData: { finalSlot: enhancedBetResult.finalSlot, multiplier: enhancedBetResult.multiplier, rows: currentRows },
+          betAmount: String(parseFloat(enhancedBetResult.betAmount) || parseFloat(enhancedBetResult.amount) || 0),
+          payoutAmount: String(enhancedBetResult.payout || 0),
+          clientBetId: enhancedBetResult.id.toString()
         });
         
-        try {
-          const response = await fetch('/api/game-history', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(gameData)
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ PLINKO: HTTP error:', response.status, errorText);
-            return;
-          }
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            console.log('✅ PLINKO: Game logged to Moca Chain successfully!');
-            console.log('🆔 Game ID:', result.gameId);
-            console.log('🔗 Moca TX:', result.transactionHash);
-            console.log('🌐 Explorer:', result.mocaExplorerUrl);
-            
-            // Update history with Moca log info
-            setGameHistory(prev => prev.map(item => 
+        console.log('💾 Plinko saved to history (triggers MOCA):', saveResult);
+        
+        // Update game history with MOCA network log info
+        if (saveResult && saveResult.mocaNetworkLog) {
+          setGameHistory(prev => {
+            return prev.map(item => 
               item.id === enhancedBetResult.id 
-                ? {
-                    ...item,
-                    mocaLogTx: result.transactionHash,
-                    mocaGameId: result.gameId,
-                    mocaExplorerUrl: result.mocaExplorerUrl
+                ? { 
+                    ...item, 
+                    mocaNetworkLog: saveResult.mocaNetworkLog,
+                    mocaLogTx: saveResult.mocaNetworkLog?.transactionHash,
+                    mocaGameId: saveResult.gameId,
+                    mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl
                   }
                 : item
-            ));
-          } else {
-            console.error('❌ PLINKO: Failed to log to Moca Chain:', result.error);
-          }
-        } catch (error) {
-          console.error('❌ PLINKO: Moca logging error:', error.message);
+            );
+          });
         }
-      } catch (error) {
-        console.warn('⚠️ PLINKO: Moca logging setup error:', error.message);
+      } catch (e) {
+        console.warn('savePlinkoGame failed:', e);
       }
       
     } catch (error) {

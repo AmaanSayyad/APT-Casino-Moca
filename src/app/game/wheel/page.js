@@ -20,6 +20,7 @@ import useWalletStatus from '@/hooks/useWalletStatus';
 // import VRFProofRequiredModal from '@/components/VRF/VRFProofRequiredModal';
 // import vrfLogger from '@/services/VRFLoggingService';
 import pythEntropyService from '@/services/PythEntropyService';
+import { useGameHistory } from '@/hooks/useGameHistory';
 
 // Import new components
 import WheelVideo from "./components/WheelVideo";
@@ -37,6 +38,9 @@ export default function Home() {
   const [gameMode, setGameMode] = useState("manual");
   const [currentMultiplier, setCurrentMultiplier] = useState(null);
   const [gameHistory, setGameHistory] = useState([]);
+  
+  // Game history hook for MOCA logging
+  const { saveWheelGame } = useGameHistory();
   const [showVRFModal, setShowVRFModal] = useState(false);
   const [targetMultiplier, setTargetMultiplier] = useState(null);
   const [wheelPosition, setWheelPosition] = useState(0);
@@ -131,67 +135,52 @@ export default function Home() {
           : item
       ));
       
-      // Log game result to Moca Chain (non-blocking)
+      // Get the history item to extract game data
+      const historyItem = gameHistory.find(item => item.id === historyItemId);
+      if (!historyItem) {
+        console.warn('⚠️ WHEEL: History item not found for logging');
+        return;
+      }
+      
+      // Save to history -> triggers MOCA logging via API (same as 0g pattern)
       try {
-        const gameData = {
-          player: walletAddress || '0x0000000000000000000000000000000000000000',
-          gameType: 'WHEEL',
-          gameSubType: `${noOfSegments}-segments`,
-          betAmount: betAmount.toString(),
-          won: currentMultiplier > 0,
-          winAmount: currentMultiplier > 0 ? (betAmount * currentMultiplier).toString() : '0',
-          multiplier: currentMultiplier.toString(),
-          entropyTxHash: entropyResult.entropyProof?.transactionHash,
-          entropySequenceNumber: entropyResult.entropyProof?.sequenceNumber || 0,
-          randomValue: entropyResult.randomValue,
-          gameData: JSON.stringify({
-            segments: noOfSegments,
-            riskLevel: risk,
-            landedMultiplier: currentMultiplier,
-            wheelPosition: wheelPosition
-          })
-        };
-
-        console.log('🎮 WHEEL: Attempting to log to Moca Chain via API...', gameData);
-        
-        const response = await fetch('/api/game-history', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const saveResult = await saveWheelGame({
+          userAddress: walletAddress || '0x0000000000000000000000000000000000000001',
+          vrfRequestId: entropyResult.entropyProof?.requestId,
+          vrfTransactionHash: entropyResult.entropyProof?.transactionHash,
+          vrfValue: entropyResult.randomValue,
+          gameConfig: { segments: noOfSegments, riskLevel: risk },
+          resultData: { 
+            segment: 0, 
+            multiplier: currentMultiplier || 0, 
+            color: historyItem.color || "#333947", 
+            totalSegments: noOfSegments 
           },
-          body: JSON.stringify(gameData)
+          betAmount: String(betAmount || 0),
+          payoutAmount: String(currentMultiplier > 0 ? (betAmount * currentMultiplier) : 0),
+          clientBetId: historyItemId.toString()
         });
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ WHEEL: HTTP error:', response.status, errorText);
-          return;
-        }
+        console.log('💾 Wheel saved to history (triggers MOCA):', saveResult);
         
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('✅ WHEEL: Game logged to Moca Chain successfully!');
-          console.log('🆔 Game ID:', result.gameId);
-          console.log('🔗 Moca TX:', result.transactionHash);
-          console.log('🌐 Explorer:', result.mocaExplorerUrl);
-          
-          // Update history with Moca log info
-          setGameHistory(prev => prev.map(item => 
-            item.id === historyItemId 
-              ? {
-                  ...item,
-                  mocaLogTx: result.transactionHash,
-                  mocaGameId: result.gameId,
-                  mocaExplorerUrl: result.mocaExplorerUrl
-                }
-              : item
-          ));
-        } else {
-          console.error('❌ WHEEL: Failed to log to Moca Chain:', result.error);
+        // Update game history with MOCA network log info
+        if (saveResult && saveResult.mocaNetworkLog) {
+          setGameHistory(prev => {
+            return prev.map(item => 
+              item.id === historyItemId 
+                ? { 
+                    ...item, 
+                    mocaNetworkLog: saveResult.mocaNetworkLog,
+                    mocaLogTx: saveResult.mocaNetworkLog?.transactionHash,
+                    mocaGameId: saveResult.gameId,
+                    mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl
+                  }
+                : item
+            );
+          });
         }
-      } catch (error) {
-        console.warn('⚠️ WHEEL: Moca logging error:', error.message);
+      } catch (e) {
+        console.warn('saveWheelGame failed:', e);
       }
       
     } catch (error) {

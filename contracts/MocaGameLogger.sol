@@ -5,63 +5,55 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title MocaGameLogger
- * @dev Game result logging contract for Moca Chain
- * Logs all game results from Wheels, Plinko, Roulette, and Mines games
+ * @dev Complete game logging contract for Moca Chain
+ * Logs detailed game information similar to 0G Network implementation
  */
 contract MocaGameLogger is Ownable {
     
-    enum GameType {
-        MINES,
-        PLINKO,
-        ROULETTE,
-        WHEEL
-    }
-    
-    struct GameResult {
-        uint256 gameId;
-        address player;
-        GameType gameType;
-        string gameSubType;
+    struct GameLog {
+        string gameId;
+        string gameType;
+        address userAddress;
         uint256 betAmount;
-        bool won;
-        uint256 winAmount;
-        uint256 multiplier; // Multiplier * 100 (e.g., 250 = 2.5x)
-        bytes32 entropyTxHash; // Arbitrum Sepolia entropy transaction hash
-        uint64 entropySequenceNumber;
-        bytes32 randomValue;
+        uint256 payoutAmount;
+        bool isWin;
+        string gameConfig;
+        string resultData;
+        string entropyProof;
         uint256 timestamp;
         uint256 blockNumber;
-        string gameData; // JSON string with game-specific data
     }
     
     // Events
     event GameLogged(
-        uint256 indexed gameId,
-        address indexed player,
-        GameType indexed gameType,
-        string gameSubType,
+        string indexed gameId,
+        string indexed gameType,
+        address indexed userAddress,
         uint256 betAmount,
-        bool won,
-        uint256 winAmount,
-        bytes32 entropyTxHash
+        uint256 payoutAmount,
+        bool isWin,
+        uint256 timestamp
+    );
+    
+    event LoggerStatsUpdated(
+        uint256 totalLogs,
+        uint256 totalGasUsed,
+        address lastLogger
     );
     
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     
     // Storage
-    mapping(uint256 => GameResult) public games;
-    mapping(address => uint256[]) public playerGames;
-    mapping(GameType => uint256[]) public gamesByType;
+    mapping(string => GameLog) public gameLogs;
+    mapping(string => bool) public gameExists;
+    mapping(address => uint256) public userLogCounts;
+    mapping(string => uint256) public gameTypeLogCounts;
+    mapping(address => string[]) public userGameIds;
     
-    uint256 public totalGames;
-    uint256 public totalBetAmount;
-    uint256 public totalWinAmount;
-    
-    // Game type counters
-    mapping(GameType => uint256) public gameTypeCount;
-    mapping(GameType => uint256) public gameTypeWins;
-    mapping(GameType => uint256) public gameTypeBetAmount;
-    mapping(GameType => uint256) public gameTypeWinAmount;
+    uint256 public totalLogs;
+    uint256 public totalGasUsed;
+    address public lastLogger;
+    string[] public allGameIds;
     
     // Treasury address that can log games
     address public treasury;
@@ -76,221 +68,237 @@ contract MocaGameLogger is Ownable {
     }
     
     /**
-     * @dev Log a game result
-     * @param player Player address
-     * @param gameType Type of game (0=MINES, 1=PLINKO, 2=ROULETTE, 3=WHEEL)
-     * @param gameSubType Sub-type of game (e.g., "red", "9-mines", "high-risk")
+     * @dev Log a complete game result with detailed information
+     * @param gameId Unique game identifier
+     * @param gameType Type of game (MINES, PLINKO, ROULETTE, WHEEL)
+     * @param userAddress Player's address
      * @param betAmount Bet amount in wei
-     * @param won Whether player won
-     * @param winAmount Win amount in wei
-     * @param multiplier Multiplier * 100 (e.g., 250 = 2.5x)
-     * @param entropyTxHash Arbitrum Sepolia entropy transaction hash
-     * @param entropySequenceNumber Entropy sequence number
-     * @param randomValue Random value used
-     * @param gameData JSON string with game-specific data
+     * @param payoutAmount Payout amount in wei
+     * @param isWin Whether the game was won
+     * @param gameConfig JSON string of game configuration
+     * @param resultData JSON string of game result data
+     * @param entropyProof JSON string of entropy proof data
      */
     function logGame(
-        address player,
-        GameType gameType,
-        string memory gameSubType,
+        string memory gameId,
+        string memory gameType,
+        address userAddress,
         uint256 betAmount,
-        bool won,
-        uint256 winAmount,
-        uint256 multiplier,
-        bytes32 entropyTxHash,
-        uint64 entropySequenceNumber,
-        bytes32 randomValue,
-        string memory gameData
+        uint256 payoutAmount,
+        bool isWin,
+        string memory gameConfig,
+        string memory resultData,
+        string memory entropyProof
     ) external onlyTreasury {
-        require(player != address(0), "Invalid player address");
-        require(betAmount > 0, "Bet amount must be greater than 0");
+        require(bytes(gameId).length > 0, "Game ID cannot be empty");
+        require(!gameExists[gameId], "Game already logged");
+        require(userAddress != address(0), "Invalid user address");
         
-        uint256 gameId = totalGames + 1;
+        uint256 gasStart = gasleft();
         
-        games[gameId] = GameResult({
+        // Create game log
+        GameLog memory newLog = GameLog({
             gameId: gameId,
-            player: player,
             gameType: gameType,
-            gameSubType: gameSubType,
+            userAddress: userAddress,
             betAmount: betAmount,
-            won: won,
-            winAmount: winAmount,
-            multiplier: multiplier,
-            entropyTxHash: entropyTxHash,
-            entropySequenceNumber: entropySequenceNumber,
-            randomValue: randomValue,
+            payoutAmount: payoutAmount,
+            isWin: isWin,
+            gameConfig: gameConfig,
+            resultData: resultData,
+            entropyProof: entropyProof,
             timestamp: block.timestamp,
-            blockNumber: block.number,
-            gameData: gameData
+            blockNumber: block.number
         });
         
-        // Update mappings
-        playerGames[player].push(gameId);
-        gamesByType[gameType].push(gameId);
+        // Store the log
+        gameLogs[gameId] = newLog;
+        gameExists[gameId] = true;
         
-        // Update counters
-        totalGames++;
-        totalBetAmount += betAmount;
-        totalWinAmount += winAmount;
+        // Update mappings and arrays
+        userLogCounts[userAddress]++;
+        gameTypeLogCounts[gameType]++;
+        userGameIds[userAddress].push(gameId);
+        allGameIds.push(gameId);
+        totalLogs++;
+        lastLogger = msg.sender;
         
-        gameTypeCount[gameType]++;
-        gameTypeBetAmount[gameType] += betAmount;
+        // Calculate gas used
+        uint256 gasUsed = gasStart - gasleft();
+        totalGasUsed += gasUsed;
         
-        if (won) {
-            gameTypeWins[gameType]++;
-            gameTypeWinAmount[gameType] += winAmount;
-        }
-        
+        // Emit events
         emit GameLogged(
             gameId,
-            player,
             gameType,
-            gameSubType,
+            userAddress,
             betAmount,
-            won,
-            winAmount,
-            entropyTxHash
+            payoutAmount,
+            isWin,
+            block.timestamp
+        );
+        
+        emit LoggerStatsUpdated(
+            totalLogs,
+            totalGasUsed,
+            msg.sender
         );
     }
     
     /**
-     * @dev Get game result by ID
+     * @dev Get game log by ID
      * @param gameId Game ID
-     * @return GameResult struct
+     * @return GameLog struct
      */
-    function getGame(uint256 gameId) external view returns (GameResult memory) {
-        require(gameId > 0 && gameId <= totalGames, "Invalid game ID");
-        return games[gameId];
+    function getGameLog(string memory gameId) external view returns (GameLog memory) {
+        require(gameExists[gameId], "Game not found");
+        return gameLogs[gameId];
     }
     
     /**
-     * @dev Get player's game history
-     * @param player Player address
+     * @dev Get user's games with pagination
+     * @param userAddress User's address
      * @param offset Starting index
      * @param limit Number of games to return
-     * @return gameIds Array of game IDs
+     * @return gameIds Array of game IDs for the user
      */
-    function getPlayerGames(
-        address player,
+    function getUserGames(
+        address userAddress,
         uint256 offset,
         uint256 limit
-    ) external view returns (uint256[] memory gameIds) {
-        uint256[] memory allGames = playerGames[player];
+    ) external view returns (string[] memory gameIds) {
+        string[] memory userGames = userGameIds[userAddress];
         
-        if (allGames.length == 0 || offset >= allGames.length) {
-            return new uint256[](0);
+        if (userGames.length == 0 || offset >= userGames.length) {
+            return new string[](0);
         }
         
         uint256 end = offset + limit;
-        if (end > allGames.length) {
-            end = allGames.length;
+        if (end > userGames.length) {
+            end = userGames.length;
         }
         
-        gameIds = new uint256[](end - offset);
+        gameIds = new string[](end - offset);
         for (uint256 i = offset; i < end; i++) {
-            uint256 reverseIndex = allGames.length - 1 - i;
-            gameIds[i - offset] = allGames[reverseIndex]; // Reverse order (newest first)
+            uint256 reverseIndex = userGames.length - 1 - i;
+            gameIds[i - offset] = userGames[reverseIndex]; // Newest first
         }
     }
     
     /**
-     * @dev Get games by type
+     * @dev Get games by type with pagination
      * @param gameType Game type
      * @param offset Starting index
      * @param limit Number of games to return
      * @return gameIds Array of game IDs
      */
     function getGamesByType(
-        GameType gameType,
+        string memory gameType,
         uint256 offset,
         uint256 limit
-    ) external view returns (uint256[] memory gameIds) {
-        uint256[] memory allGames = gamesByType[gameType];
+    ) external view returns (string[] memory gameIds) {
+        uint256 found = 0;
+        uint256 skipped = 0;
         
-        if (allGames.length == 0 || offset >= allGames.length) {
-            return new uint256[](0);
+        // Count total games of this type first
+        uint256 totalOfType = gameTypeLogCounts[gameType];
+        if (totalOfType == 0 || offset >= totalOfType) {
+            return new string[](0);
         }
         
-        uint256 end = offset + limit;
-        if (end > allGames.length) {
-            end = allGames.length;
+        // Calculate actual limit
+        uint256 actualLimit = limit;
+        if (offset + limit > totalOfType) {
+            actualLimit = totalOfType - offset;
         }
         
-        gameIds = new uint256[](end - offset);
-        for (uint256 i = offset; i < end; i++) {
-            uint256 reverseIndex = allGames.length - 1 - i;
-            gameIds[i - offset] = allGames[reverseIndex]; // Reverse order (newest first)
+        gameIds = new string[](actualLimit);
+        
+        // Iterate through all games in reverse order (newest first)
+        for (uint256 i = allGameIds.length; i > 0 && found < actualLimit; i--) {
+            string memory currentGameId = allGameIds[i - 1];
+            GameLog memory game = gameLogs[currentGameId];
+            
+            if (keccak256(bytes(game.gameType)) == keccak256(bytes(gameType))) {
+                if (skipped >= offset) {
+                    gameIds[found] = currentGameId;
+                    found++;
+                } else {
+                    skipped++;
+                }
+            }
         }
+        
+        // Resize array if needed
+        if (found < actualLimit) {
+            string[] memory resizedGameIds = new string[](found);
+            for (uint256 i = 0; i < found; i++) {
+                resizedGameIds[i] = gameIds[i];
+            }
+            return resizedGameIds;
+        }
+        
+        return gameIds;
     }
     
     /**
-     * @dev Get recent games
+     * @dev Get recent games with pagination
+     * @param offset Starting index
      * @param limit Number of games to return
      * @return gameIds Array of recent game IDs
      */
-    function getRecentGames(uint256 limit) external view returns (uint256[] memory gameIds) {
-        if (totalGames == 0) {
-            return new uint256[](0);
+    function getRecentGames(uint256 offset, uint256 limit) external view returns (string[] memory gameIds) {
+        if (allGameIds.length == 0 || offset >= allGameIds.length) {
+            return new string[](0);
         }
         
-        uint256 count = limit > totalGames ? totalGames : limit;
-        gameIds = new uint256[](count);
+        uint256 end = offset + limit;
+        if (end > allGameIds.length) {
+            end = allGameIds.length;
+        }
         
-        for (uint256 i = 0; i < count; i++) {
-            gameIds[i] = totalGames - i; // Newest first (totalGames is 1-based)
+        gameIds = new string[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            uint256 reverseIndex = allGameIds.length - 1 - i;
+            gameIds[i - offset] = allGameIds[reverseIndex]; // Newest first
         }
     }
     
     /**
-     * @dev Get game statistics
-     * @return totalGamesCount Total number of games
-     * @return totalBetAmountSum Total bet amount
-     * @return totalWinAmountSum Total win amount
-     * @return houseEdge House edge percentage * 100 (e.g., 250 = 2.5%)
+     * @dev Get logger statistics
+     * @return _totalLogs Total number of logs
+     * @return _totalGasUsed Total gas used
+     * @return _lastLogger Last logger address
+     * @return _averageGasPerLog Average gas per log
      */
-    function getGameStats() external view returns (
-        uint256 totalGamesCount,
-        uint256 totalBetAmountSum,
-        uint256 totalWinAmountSum,
-        uint256 houseEdge
+    function getLoggerStats() external view returns (
+        uint256 _totalLogs,
+        uint256 _totalGasUsed,
+        address _lastLogger,
+        uint256 _averageGasPerLog
     ) {
-        totalGamesCount = totalGames;
-        totalBetAmountSum = totalBetAmount;
-        totalWinAmountSum = totalWinAmount;
-        
-        if (totalBetAmount > 0) {
-            houseEdge = ((totalBetAmount - totalWinAmount) * 10000) / totalBetAmount;
-        } else {
-            houseEdge = 0;
-        }
+        _totalLogs = totalLogs;
+        _totalGasUsed = totalGasUsed;
+        _lastLogger = lastLogger;
+        _averageGasPerLog = totalLogs > 0 ? totalGasUsed / totalLogs : 0;
     }
     
     /**
-     * @dev Get game type statistics
+     * @dev Get user's log count
+     * @param user User address
+     * @return count Number of games logged by user
+     */
+    function getUserLogCount(address user) external view returns (uint256) {
+        return userLogCounts[user];
+    }
+    
+    /**
+     * @dev Get game type log count
      * @param gameType Game type
-     * @return count Number of games
-     * @return wins Number of wins
-     * @return betAmount Total bet amount
-     * @return winAmount Total win amount
-     * @return winRate Win rate percentage * 100 (e.g., 4500 = 45%)
+     * @return count Number of games of this type
      */
-    function getGameTypeStats(GameType gameType) external view returns (
-        uint256 count,
-        uint256 wins,
-        uint256 betAmount,
-        uint256 winAmount,
-        uint256 winRate
-    ) {
-        count = gameTypeCount[gameType];
-        wins = gameTypeWins[gameType];
-        betAmount = gameTypeBetAmount[gameType];
-        winAmount = gameTypeWinAmount[gameType];
-        
-        if (count > 0) {
-            winRate = (wins * 10000) / count;
-        } else {
-            winRate = 0;
-        }
+    function getGameTypeLogCount(string memory gameType) external view returns (uint256) {
+        return gameTypeLogCounts[gameType];
     }
     
     /**
@@ -308,18 +316,15 @@ contract MocaGameLogger is Ownable {
      * @dev Get contract info
      * @return contractAddress This contract address
      * @return treasuryAddress Treasury address
-     * @return totalGamesCount Total games logged
-     * @return contractBalance Contract balance
+     * @return totalLogsCount Total games logged
      */
     function getContractInfo() external view returns (
         address contractAddress,
         address treasuryAddress,
-        uint256 totalGamesCount,
-        uint256 contractBalance
+        uint256 totalLogsCount
     ) {
         contractAddress = address(this);
         treasuryAddress = treasury;
-        totalGamesCount = totalGames;
-        contractBalance = address(this).balance;
+        totalLogsCount = totalLogs;
     }
 }

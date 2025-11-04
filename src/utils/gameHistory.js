@@ -1,10 +1,11 @@
 /**
- * Game History Utilities
- * Helper functions for saving and managing game results with VRF details
+ * Game History Utilities for Moca Chain
+ * Helper functions for saving and managing game results with VRF details and Moca Network logging
+ * Based on 0G Network implementation
  */
 
 /**
- * Save game result to history with VRF transaction hash
+ * Save game result to history with VRF transaction hash and Moca Chain logging
  * @param {Object} gameData - Game result data
  * @returns {Promise<Object>} Saved game result
  */
@@ -19,7 +20,8 @@ export const saveGameResult = async (gameData) => {
       betAmount,
       payoutAmount,
       vrfTransactionHash,
-      vrfValue
+      vrfValue,
+      clientBetId
     } = gameData;
 
     // Validate required fields
@@ -27,7 +29,7 @@ export const saveGameResult = async (gameData) => {
       throw new Error('Missing required game data fields');
     }
 
-    // Prepare request body
+    // Prepare request body for local database
     const requestBody = {
       vrfRequestId,
       userAddress,
@@ -35,10 +37,11 @@ export const saveGameResult = async (gameData) => {
       gameConfig,
       resultData,
       betAmount: betAmount ? betAmount.toString() : null,
-      payoutAmount: payoutAmount ? payoutAmount.toString() : null
+      payoutAmount: payoutAmount ? payoutAmount.toString() : null,
+      clientBetId
     };
 
-    // Make API request
+    // Make API request to save to local database
     const response = await fetch('/api/games/save-result', {
       method: 'POST',
       headers: {
@@ -55,17 +58,115 @@ export const saveGameResult = async (gameData) => {
 
     console.log('✅ Game result saved successfully:', data.data.gameResult.id);
 
-    return {
-      success: true,
-      gameId: data.data.gameResult.id,
-      vrfDetails: data.data.vrfDetails,
-      message: 'Game result saved with VRF verification'
+    // Log to Moca Chain in background (don't wait for it)
+    const gameId = clientBetId || data.data.gameResult.id;
+    const mocaLogData = {
+      gameId: gameId,
+      gameType: gameType,
+      userAddress: userAddress,
+      betAmount: betAmount,
+      payoutAmount: payoutAmount,
+      isWin: payoutAmount && parseFloat(payoutAmount) > 0,
+      gameConfig: gameConfig,
+      resultData: resultData,
+      entropyProof: {
+        requestId: vrfRequestId,
+        transactionHash: vrfTransactionHash,
+        randomValue: vrfValue
+      }
     };
+
+    // Log to Moca Chain synchronously and wait for result
+    console.log('🎮 Starting Moca Chain logging for game:', gameId);
+
+    const postLog = async () => {
+      // Try contract logger first, fallback to transaction logger
+      const contractRes = await fetch('/api/log-to-moca-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mocaLogData)
+      }).catch(() => null);
+      
+      if (contractRes && contractRes.ok) {
+        const contractResult = await contractRes.json().catch(() => null);
+        if (contractResult && contractResult.success) {
+          console.log('✅ Used Moca contract logger successfully');
+          return contractResult;
+        }
+      }
+      
+      // Fallback to transaction logger (if exists)
+      console.log('⚠️ Moca contract logger failed, using transaction logger as fallback');
+      const res = await fetch('/api/log-to-moca', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mocaLogData)
+      });
+      return res.json().catch(() => ({ success: false, error: 'Invalid JSON from logger API' }));
+    };
+
+    let mocaResult;
+    try {
+      mocaResult = await postLog();
+      if (!mocaResult?.success) {
+        // brief retry once
+        await new Promise(r => setTimeout(r, 1200));
+        mocaResult = await postLog();
+      }
+    } catch (e) {
+      mocaResult = { success: false, error: e?.message || 'Network error' };
+    }
+
+    console.log('🎮 Moca Chain logging result:', mocaResult);
+    
+    // Add Moca transaction info to the result
+    const finalResult = {
+      success: true,
+      gameId: gameId,
+      vrfDetails: data.data.vrfDetails,
+      mocaNetworkLog: mocaResult.success ? {
+        transactionHash: mocaResult.transactionHash,
+        blockNumber: mocaResult.blockNumber,
+        mocaExplorerUrl: mocaResult.mocaExplorerUrl,
+        network: mocaResult.network,
+        gameType: mocaResult.gameType,
+        timestamp: mocaResult.timestamp
+      } : {
+        failed: true,
+        error: mocaResult.error
+      },
+      message: 'Game result saved with VRF verification and Moca Chain logging'
+    };
+
+    if (mocaResult.success) {
+      console.log('✅ Game result logged to Moca Chain:', mocaResult.transactionHash);
+    } else {
+      console.warn('⚠️ Failed to log to Moca Chain:', mocaResult.error);
+    }
+
+    return finalResult;
 
   } catch (error) {
     console.error('❌ Failed to save game result:', error);
     throw error;
   }
+};
+
+/**
+ * Get Moca Network log for a game
+ * @param {string} gameId - Game ID
+ * @returns {Object|null} Moca Network log data
+ */
+export const getMocaNetworkLog = (gameData) => {
+  if (!gameData) return null;
+  
+  // If gameData is just an ID (legacy), return null to show loading
+  if (typeof gameData === 'string') {
+    return null;
+  }
+  
+  // Return the Moca network log from game data
+  return gameData.mocaNetworkLog || null;
 };
 
 /**
@@ -309,9 +410,9 @@ export const exportGameHistoryCSV = (games, userAddress) => {
       'Game Type': game.gameType,
       'Result': formattedResult.primary,
       'Details': formattedResult.secondary,
-      'Bet Amount (ETH)': (parseFloat(game.betAmount || 0) / 1e18).toFixed(6),
-      'Payout (ETH)': (parseFloat(game.payoutAmount || 0) / 1e18).toFixed(6),
-      'Profit/Loss (ETH)': (parseFloat(game.profitLoss || 0) / 1e18).toFixed(6),
+      'Bet Amount (MOCA)': (parseFloat(game.betAmount || 0) / 1e18).toFixed(6),
+      'Payout (MOCA)': (parseFloat(game.payoutAmount || 0) / 1e18).toFixed(6),
+      'Profit/Loss (MOCA)': (parseFloat(game.profitLoss || 0) / 1e18).toFixed(6),
       'Multiplier': game.multiplier?.toFixed(2) || '0.00',
       'Win/Loss': game.isWin ? 'WIN' : 'LOSS',
       'VRF Transaction': game.vrfDetails?.transactionHash || 'N/A',
@@ -353,32 +454,31 @@ export const exportGameHistoryCSV = (games, userAddress) => {
 };
 
 /**
- * Get Etherscan URL for transaction
+ * Get Moca Chain explorer URL for transaction
  * @param {string} transactionHash - Transaction hash
- * @param {string} network - Network name (default: sepolia)
- * @returns {string} Etherscan URL
+ * @param {string} network - Network name (default: moca-testnet)
+ * @returns {string} Explorer URL
  */
-export const getEtherscanUrl = (transactionHash, network = 'sepolia') => {
+export const getMocaExplorerUrl = (transactionHash, network = 'moca-testnet') => {
   const baseUrls = {
-    mainnet: 'https://etherscan.io',
-    sepolia: 'https://sepolia.etherscan.io',
-    goerli: 'https://goerli.etherscan.io'
+    'moca-testnet': 'https://testnet-scan.mocachain.org',
+    'moca-mainnet': 'https://scan.mocachain.org'
   };
 
-  const baseUrl = baseUrls[network] || baseUrls.sepolia;
+  const baseUrl = baseUrls[network] || baseUrls['moca-testnet'];
   return `${baseUrl}/tx/${transactionHash}`;
 };
 
 /**
- * Format MOCA amount for displayy
+ * Format MOCA amount for display
  * @param {string|number} amount - Amount in wei
  * @param {number} decimals - Number of decimal places
  * @returns {string} Formatted amount
  */
-export const formatEthAmount = (amount, decimals = 6) => {
+export const formatMocaAmount = (amount, decimals = 6) => {
   if (!amount) return '0';
-  const eth = parseFloat(amount) / 1e18;
-  return eth.toFixed(decimals);
+  const moca = parseFloat(amount) / 1e18;
+  return moca.toFixed(decimals);
 };
 
 /**
@@ -406,6 +506,20 @@ export const getGameTypeEmoji = (gameType) => {
   return emojis[gameType?.toUpperCase()] || '🎮';
 };
 
+/**
+ * Get Moca Chain network info
+ * @returns {Object} Network information
+ */
+export const getMocaNetworkInfo = () => {
+  return {
+    name: 'Moca Chain Testnet',
+    chainId: 222888,
+    currency: 'MOCA',
+    explorerUrl: 'https://testnet-scan.mocachain.org',
+    rpcUrl: 'https://testnet-rpc.mocachain.org/'
+  };
+};
+
 export default {
   saveGameResult,
   getUserHistory,
@@ -413,8 +527,10 @@ export default {
   formatGameResult,
   calculateGameStats,
   exportGameHistoryCSV,
-  getEtherscanUrl,
-  formatEthAmount,
+  getMocaExplorerUrl,
+  formatMocaAmount,
   formatGameDate,
-  getGameTypeEmoji
+  getGameTypeEmoji,
+  getMocaNetworkLog,
+  getMocaNetworkInfo
 };

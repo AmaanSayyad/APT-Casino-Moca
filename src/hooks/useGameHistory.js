@@ -46,7 +46,8 @@ export const useGameHistory = () => {
     gameConfig,
     resultData,
     betAmount,
-    payoutAmount
+    payoutAmount,
+    clientBetId
   }) => {
     return saveGame({
       userAddress,
@@ -68,7 +69,8 @@ export const useGameHistory = () => {
         ...resultData
       },
       betAmount,
-      payoutAmount
+      payoutAmount,
+      clientBetId
     });
   }, [saveGame]);
 
@@ -85,7 +87,8 @@ export const useGameHistory = () => {
     gameConfig,
     resultData,
     betAmount,
-    payoutAmount
+    payoutAmount,
+    clientBetId
   }) => {
     return saveGame({
       userAddress,
@@ -107,7 +110,8 @@ export const useGameHistory = () => {
         ...resultData
       },
       betAmount,
-      payoutAmount
+      payoutAmount,
+      clientBetId
     });
   }, [saveGame]);
 
@@ -124,7 +128,8 @@ export const useGameHistory = () => {
     gameConfig,
     resultData,
     betAmount,
-    payoutAmount
+    payoutAmount,
+    clientBetId
   }) => {
     return saveGame({
       userAddress,
@@ -146,7 +151,8 @@ export const useGameHistory = () => {
         ...resultData
       },
       betAmount,
-      payoutAmount
+      payoutAmount,
+      clientBetId
     });
   }, [saveGame]);
 
@@ -163,7 +169,8 @@ export const useGameHistory = () => {
     gameConfig,
     resultData,
     betAmount,
-    payoutAmount
+    payoutAmount,
+    clientBetId
   }) => {
     return saveGame({
       userAddress,
@@ -185,7 +192,8 @@ export const useGameHistory = () => {
         ...resultData
       },
       betAmount,
-      payoutAmount
+      payoutAmount,
+      clientBetId
     });
   }, [saveGame]);
 

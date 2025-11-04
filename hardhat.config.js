@@ -36,6 +36,8 @@ module.exports = {
       accounts: process.env.MOCA_TREASURY_PRIVATE_KEY ? [process.env.MOCA_TREASURY_PRIVATE_KEY] : [],
       chainId: 222888,
       timeout: 120000,
+      gasPrice: 1000000000, // 1 gwei (much lower for MOCA)
+      gas: 3000000,
       httpHeaders: {
         "User-Agent": "hardhat"
       }

@@ -25,6 +25,7 @@ import GameDetail from "@/components/GameDetail";
 import AIAutoBetting from "./components/AIAutoBetting";
 import AISettingsModal from "./components/AISettingsModal";
 import pythEntropyService from '@/services/PythEntropyService';
+import { useGameHistory } from '@/hooks/useGameHistory';
 
 export default function Mines() {
   // Game State
@@ -35,6 +36,9 @@ export default function Mines() {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [gameStatus, setGameStatus] = useState({ isPlaying: false, hasPlacedBet: false });
   const [gameHistory, setGameHistory] = useState([]);
+  
+  // Game history hook for MOCA logging
+  const { saveMinesGame } = useGameHistory();
   
   // AI Auto Betting State
   const [isAIActive, setIsAIActive] = useState(false);
@@ -232,71 +236,40 @@ export default function Mines() {
     
     setGameHistory(prev => [newHistoryItem, ...prev].slice(0, 50));
     
-    // Log game result to Moca Chain (non-blocking)
+    // Save to history -> triggers MOCA logging via API (same as 0g pattern)
     try {
-      const gameData = {
-        player: walletAddress || address || '0x0000000000000000000000000000000000000000',
-        gameType: 'MINES',
-        gameSubType: `${result.mines || 9}-mines`,
-        betAmount: (result.betAmount || 0).toString(),
-        won: result.won || false,
-        winAmount: result.won ? (result.payout || 0).toString() : '0',
-        multiplier: result.won ? (result.multiplier || 0).toString() : '0',
-        entropyTxHash: entropyProof?.transactionHash,
-        entropySequenceNumber: entropyProof?.sequenceNumber || 0,
-        randomValue: entropyProof?.randomValue || 0,
-        gameData: JSON.stringify({
-          minesCount: result.mines || 9,
-          revealedTiles: result.revealedTiles || [],
-          hitMine: !result.won,
-          gameBoard: result.gameBoard || []
-        })
-      };
-
-      console.log('🎮 MINES: Attempting to log to Moca Chain via API...', gameData);
+      const saveResult = await saveMinesGame({
+        userAddress: walletAddress || address || '0x0000000000000000000000000000000000000001',
+        vrfRequestId: entropyProof?.requestId,
+        vrfTransactionHash: entropyProof?.transactionHash,
+        vrfValue: entropyProof?.randomValue,
+        gameConfig: { mineCount: result.mines || 0, gridSize: 25 },
+        resultData: { hitMine: !result.won, totalMines: result.mines || 0, revealedTiles: result.revealedTiles || [] },
+        betAmount: String(result.betAmount || 0),
+        payoutAmount: String(result.payout || 0),
+        clientBetId: newHistoryItem.id.toString()
+      });
       
-      try {
-        const response = await fetch('/api/game-history', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(gameData)
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ MINES: HTTP error:', response.status, errorText);
-          return;
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('✅ MINES: Game logged to Moca Chain successfully!');
-          console.log('🆔 Game ID:', result.gameId);
-          console.log('🔗 Moca TX:', result.transactionHash);
-          console.log('🌐 Explorer:', result.mocaExplorerUrl);
-          
-          // Update history with Moca log info
-          setGameHistory(prev => prev.map(item => 
+      console.log('💾 Mines saved to history (triggers MOCA):', saveResult);
+      
+      // Update game history with MOCA network log info
+      if (saveResult && saveResult.mocaNetworkLog) {
+        setGameHistory(prev => {
+          return prev.map(item => 
             item.id === newHistoryItem.id 
-              ? {
-                  ...item,
-                  mocaLogTx: result.transactionHash,
-                  mocaGameId: result.gameId,
-                  mocaExplorerUrl: result.mocaExplorerUrl
+              ? { 
+                  ...item, 
+                  mocaNetworkLog: saveResult.mocaNetworkLog,
+                  mocaLogTx: saveResult.mocaNetworkLog?.transactionHash,
+                  mocaGameId: saveResult.gameId,
+                  mocaExplorerUrl: saveResult.mocaNetworkLog?.mocaExplorerUrl
                 }
               : item
-          ));
-        } else {
-          console.error('❌ MINES: Failed to log to Moca Chain:', result.error);
-        }
-      } catch (error) {
-        console.error('❌ MINES: Moca logging error:', error.message);
+          );
+        });
       }
-    } catch (error) {
-      console.warn('⚠️ MINES: Moca logging setup error:', error.message);
+    } catch (e) { 
+      console.warn('saveMinesGame failed:', e); 
     }
   };
 
