@@ -269,7 +269,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
   // Open Entropy Explorer link
   const openEntropyExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=monad-testnet&search=${txHash}`;
+      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${txHash}`;
       window.open(entropyExplorerUrl, '_blank');
     }
   };
@@ -584,13 +584,34 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                                     </Typography>
                                   </Box>
                                 )}
-                                {(bet.entropyProof?.monadExplorerUrl || bet.vrfProof?.transactionHash) && (
+                                {bet.entropyProof.arbiscanUrl && (
                                   <Box
-                                    onClick={() => {
-                                      const url = bet.entropyProof?.monadExplorerUrl || 
-                                                 `https://testnet.monadexplorer.com/tx/${bet.vrfProof?.transactionHash}`;
-                                      window.open(url, '_blank');
+                                    onClick={() => window.open(bet.entropyProof.arbiscanUrl, '_blank')}
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                      cursor: 'pointer',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'rgba(0, 150, 255, 0.1)',
+                                      border: '1px solid rgba(0, 150, 255, 0.3)',
+                                      transition: 'all 0.2s ease',
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(0, 150, 255, 0.2)',
+                                        transform: 'scale(1.05)'
+                                      }
                                     }}
+                                  >
+                                    <FaExternalLinkAlt size={10} color="#0096FF" />
+                                    <Typography variant="caption" sx={{ color: '#0096FF', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                      ETH
+                                    </Typography>
+                                  </Box>
+                                )}
+                                {bet.mocaLogTx && (
+                                  <Box
+                                    onClick={() => window.open(`https://testnet-scan.mocachain.org/tx/${bet.mocaLogTx}`, '_blank')}
                                     sx={{
                                       display: 'flex',
                                       alignItems: 'center',
@@ -609,7 +630,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                                   >
                                     <FaExternalLinkAlt size={10} color="#8B2398" />
                                     <Typography variant="caption" sx={{ color: '#8B2398', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                      Monad
+                                      MOCA
                                     </Typography>
                                   </Box>
                                 )}

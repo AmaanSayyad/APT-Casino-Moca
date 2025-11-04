@@ -52,7 +52,12 @@ export default function Home() {
   const dispatch = useDispatch();
   const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
-  const { isConnected } = useWalletStatus();
+  const { isConnected, walletAddress } = useWalletStatus();
+  
+  // Debug wallet status
+  useEffect(() => {
+    console.log('🔗 Wheel Wallet Status:', { isConnected, walletAddress });
+  }, [isConnected, walletAddress]);
   
   // Use ref to prevent infinite loop in useEffect
   const isInitialized = useRef(false);
@@ -126,25 +131,67 @@ export default function Home() {
           : item
       ));
       
-      // Log on-chain via casino wallet (non-blocking)
+      // Log game result to Moca Chain (non-blocking)
       try {
-        fetch('/api/casino-session', {
+        const gameData = {
+          player: walletAddress || '0x0000000000000000000000000000000000000000',
+          gameType: 'WHEEL',
+          gameSubType: `${noOfSegments}-segments`,
+          betAmount: betAmount.toString(),
+          won: currentMultiplier > 0,
+          winAmount: currentMultiplier > 0 ? (betAmount * currentMultiplier).toString() : '0',
+          multiplier: currentMultiplier.toString(),
+          entropyTxHash: entropyResult.entropyProof?.transactionHash,
+          entropySequenceNumber: entropyResult.entropyProof?.sequenceNumber || 0,
+          randomValue: entropyResult.randomValue,
+          gameData: JSON.stringify({
+            segments: noOfSegments,
+            riskLevel: risk,
+            landedMultiplier: currentMultiplier,
+            wheelPosition: wheelPosition
+          })
+        };
+
+        console.log('🎮 WHEEL: Attempting to log to Moca Chain via API...', gameData);
+        
+        const response = await fetch('/api/game-history', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: entropyResult.entropyProof?.requestId || `wheel_${Date.now()}`,
-            gameType: 'WHEEL',
-            channelId: entropyResult.entropyProof?.requestId || 'entropy_channel',
-            valueMon: 0
-          })
-        })
-          .then(async (r) => {
-            const t = await r.text().catch(() => '');
-            console.log('🎡 Casino session log (Wheel):', r.status, t);
-          })
-          .catch((e) => console.warn('Casino session log failed (Wheel):', e));
-      } catch (e) {
-        console.warn('Casino session log threw (Wheel):', e);
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(gameData)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ WHEEL: HTTP error:', response.status, errorText);
+          return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ WHEEL: Game logged to Moca Chain successfully!');
+          console.log('🆔 Game ID:', result.gameId);
+          console.log('🔗 Moca TX:', result.transactionHash);
+          console.log('🌐 Explorer:', result.mocaExplorerUrl);
+          
+          // Update history with Moca log info
+          setGameHistory(prev => prev.map(item => 
+            item.id === historyItemId 
+              ? {
+                  ...item,
+                  mocaLogTx: result.transactionHash,
+                  mocaGameId: result.gameId,
+                  mocaExplorerUrl: result.mocaExplorerUrl
+                }
+              : item
+          ));
+        } else {
+          console.error('❌ WHEEL: Failed to log to Moca Chain:', result.error);
+        }
+      } catch (error) {
+        console.warn('⚠️ WHEEL: Moca logging error:', error.message);
       }
       
     } catch (error) {

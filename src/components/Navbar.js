@@ -147,16 +147,6 @@ export default function Navbar() {
   // Use global wallet persistence hook
   useGlobalWalletPersistence();
 
-  // Debug: Log treasury configuration on mount
-  useEffect(() => {
-    console.log('🏦 Treasury Config:', {
-      MOCA_ADDRESS: TREASURY_CONFIG.MOCA?.ADDRESS,
-      ADDRESS: TREASURY_CONFIG.ADDRESS,
-      NETWORK: TREASURY_CONFIG.MOCA?.NETWORK,
-      GAS_LIMITS: TREASURY_CONFIG.GAS
-    });
-  }, []);
-
   // Debug wallet connection
   useEffect(() => {
     console.log('🔗 Wallet connection state:', { 
@@ -448,16 +438,13 @@ export default function Navbar() {
     }
     
     // Check deposit limits
-    const minDeposit = TREASURY_CONFIG.LIMITS?.MIN_DEPOSIT || 0.001;
-    const maxDeposit = TREASURY_CONFIG.LIMITS?.MAX_DEPOSIT || 100;
-    
-    if (amount < minDeposit) {
-      notification.error(`Minimum deposit amount is ${minDeposit} MOCA`);
+    if (amount < TREASURY_CONFIG.LIMITS.MIN_DEPOSIT) {
+      notification.error(`Minimum deposit amount is ${TREASURY_CONFIG.LIMITS.MIN_DEPOSIT} MOCA`);
       return;
     }
     
-    if (amount > maxDeposit) {
-      notification.error(`Maximum deposit amount is ${maxDeposit} MOCA`);
+    if (amount > TREASURY_CONFIG.LIMITS.MAX_DEPOSIT) {
+      notification.error(`Maximum deposit amount is ${TREASURY_CONFIG.LIMITS.MAX_DEPOSIT} MOCA`);
       return;
     }
 
@@ -477,13 +464,7 @@ export default function Navbar() {
       
       // Check if user is on Moca Chain Testnet network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const networkConfig = TREASURY_CONFIG.NETWORK || TREASURY_CONFIG.MOCA?.NETWORK;
-      
-      if (!networkConfig) {
-        throw new Error('Network configuration is not available. Please check your environment variables.');
-      }
-      
-      const expectedChainId = networkConfig.CHAIN_ID;
+      const expectedChainId = TREASURY_CONFIG.NETWORK.CHAIN_ID;
       
       console.log('🔍 Current chain ID:', chainId);
       console.log('🔍 Expected chain ID:', expectedChainId);
@@ -508,14 +489,14 @@ export default function Navbar() {
                 method: 'wallet_addEthereumChain',
                 params: [{
                   chainId: expectedChainId,
-                  chainName: networkConfig.CHAIN_NAME || 'Moca Chain Testnet',
+                  chainName: TREASURY_CONFIG.NETWORK.CHAIN_NAME,
                   nativeCurrency: {
                     name: 'MOCA',
                     symbol: 'MOCA',
                     decimals: 18
                   },
-                  rpcUrls: [networkConfig.RPC_URL || 'https://testnet-rpc.mocachain.org/'],
-                  blockExplorerUrls: [networkConfig.EXPLORER_URL || 'https://testnet-scan.mocachain.org/']
+                  rpcUrls: [TREASURY_CONFIG.NETWORK.RPC_URL],
+                  blockExplorerUrls: [TREASURY_CONFIG.NETWORK.EXPLORER_URL]
                 }]
               });
               console.log('✅ Successfully added Moca Chain Testnet network');
@@ -532,21 +513,15 @@ export default function Navbar() {
             }
           } else {
             console.error('❌ Switch error:', switchError);
-            throw new Error(`Please switch to ${networkConfig.CHAIN_NAME || 'Moca Chain Testnet'} network. Error: ${switchError.message}`);
+            throw new Error(`Please switch to ${TREASURY_CONFIG.NETWORK.CHAIN_NAME} network. Error: ${switchError.message}`);
           }
         }
       } else {
         console.log('✅ Already on correct network');
       }
       
-      // Casino treasury address from config - Use MOCA network address
-      const TREASURY_ADDRESS = TREASURY_CONFIG.MOCA?.ADDRESS || TREASURY_CONFIG.ADDRESS;
-      
-      if (!TREASURY_ADDRESS) {
-        throw new Error('Treasury address is not configured. Please set MOCA_TREASURY_ADDRESS environment variable in .env file.');
-      }
-      
-      console.log('💰 Using MOCA Treasury Address:', TREASURY_ADDRESS);
+      // Casino treasury address from config
+      const TREASURY_ADDRESS = TREASURY_CONFIG.ADDRESS;
       
       // Convert amount to Wei (18 decimals)
       const amountWei = (amount * 10**18).toString();
@@ -556,7 +531,7 @@ export default function Navbar() {
         to: TREASURY_ADDRESS,
         from: userAccount,
         value: '0x' + parseInt(amountWei).toString(16), // Convert to hex
-        gas: TREASURY_CONFIG.GAS?.DEPOSIT_LIMIT || '0x5208', // Gas limit from config or default
+        gas: TREASURY_CONFIG.GAS.DEPOSIT_LIMIT, // Gas limit from config
       };
       
       console.log('Sending transaction to MetaMask:', transactionParameters);
@@ -1194,9 +1169,7 @@ export default function Navbar() {
               <div className="mb-6">
                 <h4 className="text-sm font-medium textDeposit MOCA">Deposit MOCA to Casino Treasury</h4>
                 <div className="text-xs text-gray-400 mb-2">
-                  Treasury: {TREASURY_CONFIG.MOCA?.ADDRESS && TREASURY_CONFIG.MOCA.ADDRESS.length > 0 
-                    ? `${TREASURY_CONFIG.MOCA.ADDRESS.slice(0, 10)}...${TREASURY_CONFIG.MOCA.ADDRESS.slice(-8)}`
-                    : 'Not configured - Please set MOCA_TREASURY_ADDRESS in .env'}
+                  Treasury: {TREASURY_CONFIG.ADDRESS ? `${TREASURY_CONFIG.ADDRESS.slice(0, 10)}...${TREASURY_CONFIG.ADDRESS.slice(-8)}` : 'Not configured'}
                 </div>
                 <div className="flex gap-2">
                   <input

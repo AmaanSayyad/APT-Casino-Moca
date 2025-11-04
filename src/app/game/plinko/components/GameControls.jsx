@@ -588,7 +588,7 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
           </button>
           
           {/* Insufficient Balance Warning */}
-          {((gameMode === "auto" && !hasSufficientBalanceForAutoBet()) || (!gameMode === "auto" && !hasSufficientBalance())) && parseFloat(betAmount) > 0 && (
+          {((gameMode === "auto" && !hasSufficientBalanceForAutoBet()) || (gameMode !== "auto" && !hasSufficientBalance())) && parseFloat(betAmount) > 0 && (
             <div className="text-center text-red-400 text-sm">
               {gameMode === "auto" 
                 ? `Insufficient balance: ${betAmount} MOCA each` 

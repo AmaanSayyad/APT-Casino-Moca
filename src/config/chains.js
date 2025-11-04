@@ -57,34 +57,7 @@ export const arbitrumSepolia = defineChain({
   testnet: true,
 });
 
-// Monad Testnet Definition
-export const monadTestnet = defineChain({
-  id: 41454,
-  name: 'Monad Testnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'MOCA',
-    symbol: 'MOCA',
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://testnet-rpc.monad.xyz'],
-    },
-    public: {
-      http: ['https://testnet-rpc.monad.xyz'],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: 'Monad Testnet Explorer',
-      url: 'https://testnet-explorer.monad.xyz',
-    },
-  },
-  testnet: true,
-});
-
 export default {
   mocaChainTestnet,
   arbitrumSepolia,
-  monadTestnet,
 };

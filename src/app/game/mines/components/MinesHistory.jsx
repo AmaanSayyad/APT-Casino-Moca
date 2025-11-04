@@ -314,17 +314,13 @@ const MinesHistory = ({ gameHistory = [], userStats = {} }) => {
                       <div className="text-yellow-400 font-bold">{game.entropyProof.sequenceNumber && game.entropyProof.sequenceNumber !== '0' ? String(game.entropyProof.sequenceNumber) : ''}</div>
                     </div>
                     <div className="flex gap-1">
-                      {(game.entropyProof.monadExplorerUrl || game.entropyProof.transactionHash) && (
+                      {game.entropyProof.arbiscanUrl && (
                         <button
-                          onClick={() => {
-                            const url = game.entropyProof.monadExplorerUrl || 
-                                       `https://testnet.monadexplorer.com/tx/${game.entropyProof.transactionHash}`;
-                            window.open(url, '_blank');
-                          }}
-                          className="flex items-center gap-1 px-2 py-1 bg-[#8B2398]/10 border border-[#8B2398]/30 rounded text-[#8B2398] text-xs hover:bg-[#8B2398]/20 transition-colors"
+                          onClick={() => window.open(game.entropyProof.arbiscanUrl, '_blank')}
+                          className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 text-xs hover:bg-blue-500/20 transition-colors"
                         >
                           <FaExternalLinkAlt size={8} />
-                          Monad
+                          ETH
                         </button>
                       )}
                       {game.entropyProof.transactionHash && (
@@ -334,6 +330,15 @@ const MinesHistory = ({ gameHistory = [], userStats = {} }) => {
                         >
                           <FaExternalLinkAlt size={8} />
                           Entropy
+                        </button>
+                      )}
+                      {game.mocaLogTx && (
+                        <button
+                          onClick={() => window.open(`https://testnet-scan.mocachain.org/tx/${game.mocaLogTx}`, '_blank')}
+                          className="flex items-center gap-1 px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded text-purple-400 text-xs hover:bg-purple-500/20 transition-colors"
+                        >
+                          <FaExternalLinkAlt size={8} />
+                          MOCA
                         </button>
                       )}
                     </div>

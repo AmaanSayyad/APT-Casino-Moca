@@ -1,0 +1,11 @@
+{
+  "network": "moca-testnet",
+  "chainId": "222888",
+  "contractName": "MocaGameLogger",
+  "contractAddress": "0x5F89c14EAD95A21bCDD25De33582913965f9E000",
+  "treasuryAddress": "0x025182b20Da64b5997d09a5a62489741F68d9B96",
+  "deployer": "0x025182b20Da64b5997d09a5a62489741F68d9B96",
+  "deploymentTime": "2025-11-03T23:41:02.702Z",
+  "transactionHash": "0xcf2c902ff340692927c6048003039642be93be317a0feddeebc988fcafe849be",
+  "blockNumber": "pending"
+}

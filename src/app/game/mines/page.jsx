@@ -61,7 +61,7 @@ export default function Mines() {
   });
   
   // Wallet connection
-  const { isConnected, address } = useWalletStatus();
+  const { isConnected, address, walletAddress } = useWalletStatus();
   
   // Theme
   const { theme } = useTheme();
@@ -232,20 +232,72 @@ export default function Mines() {
     
     setGameHistory(prev => [newHistoryItem, ...prev].slice(0, 50));
     
-    // Fire-and-forget casino session log
+    // Log game result to Moca Chain (non-blocking)
     try {
-      fetch('/api/casino-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: result.entropyProof?.requestId || `mines_${Date.now()}`,
-          gameType: 'MINES',
-          requestId: result.entropyProof?.requestId || `mines_request_${Date.now()}`,
-          valueMon: 0,
-          entropyProof: result.entropyProof
+      const gameData = {
+        player: walletAddress || address || '0x0000000000000000000000000000000000000000',
+        gameType: 'MINES',
+        gameSubType: `${result.mines || 9}-mines`,
+        betAmount: (result.betAmount || 0).toString(),
+        won: result.won || false,
+        winAmount: result.won ? (result.payout || 0).toString() : '0',
+        multiplier: result.won ? (result.multiplier || 0).toString() : '0',
+        entropyTxHash: entropyProof?.transactionHash,
+        entropySequenceNumber: entropyProof?.sequenceNumber || 0,
+        randomValue: entropyProof?.randomValue || 0,
+        gameData: JSON.stringify({
+          minesCount: result.mines || 9,
+          revealedTiles: result.revealedTiles || [],
+          hitMine: !result.won,
+          gameBoard: result.gameBoard || []
         })
-      }).catch(() => {});
-    } catch {}
+      };
+
+      console.log('🎮 MINES: Attempting to log to Moca Chain via API...', gameData);
+      
+      try {
+        const response = await fetch('/api/game-history', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(gameData)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ MINES: HTTP error:', response.status, errorText);
+          return;
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ MINES: Game logged to Moca Chain successfully!');
+          console.log('🆔 Game ID:', result.gameId);
+          console.log('🔗 Moca TX:', result.transactionHash);
+          console.log('🌐 Explorer:', result.mocaExplorerUrl);
+          
+          // Update history with Moca log info
+          setGameHistory(prev => prev.map(item => 
+            item.id === newHistoryItem.id 
+              ? {
+                  ...item,
+                  mocaLogTx: result.transactionHash,
+                  mocaGameId: result.gameId,
+                  mocaExplorerUrl: result.mocaExplorerUrl
+                }
+              : item
+          ));
+        } else {
+          console.error('❌ MINES: Failed to log to Moca Chain:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ MINES: Moca logging error:', error.message);
+      }
+    } catch (error) {
+      console.warn('⚠️ MINES: Moca logging setup error:', error.message);
+    }
   };
 
   // Handle tab change

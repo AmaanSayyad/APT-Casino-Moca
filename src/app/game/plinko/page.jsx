@@ -9,6 +9,7 @@ import PlinkoPayouts from "./components/PlinkoPayouts";
 import PlinkoLeaderboard from "./components/PlinkoLeaderboard";
 import { gameData, bettingTableData } from "./config/gameDetail";
 import { useSelector } from 'react-redux';
+import useWalletStatus from '../../../hooks/useWalletStatus';
 import { motion } from "framer-motion";
 import { Typography } from "@mui/material";
 import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
@@ -17,6 +18,7 @@ import pythEntropyService from '../../../services/PythEntropyService';
 
 export default function Plinko() {
   const userBalance = useSelector((state) => state.balance.userBalance);
+  const { isConnected, walletAddress } = useWalletStatus();
   
   const [currentRows, setCurrentRows] = useState(15);
   const [currentRiskLevel, setCurrentRiskLevel] = useState("Medium");
@@ -196,6 +198,8 @@ export default function Plinko() {
 
   const handleBetHistoryChange = async (newBetResult) => {
     console.log('🔍 handleBetHistoryChange called with:', newBetResult);
+    console.log('🔍 IMMEDIATE DEBUG - currentBetAmount:', currentBetAmount);
+    console.log('🔍 IMMEDIATE DEBUG - newBetResult.betAmount:', newBetResult.betAmount);
     
     // Use Pyth Entropy for randomness
     try {
@@ -220,7 +224,107 @@ export default function Plinko() {
       };
       
       console.log('📝 Enhanced bet result:', enhancedBetResult);
+      console.log('🎮 PLINKO: currentBetAmount:', currentBetAmount);
+      console.log('🎮 PLINKO: newBetResult.betAmount:', newBetResult.betAmount);
       setGameHistory(prev => [enhancedBetResult, ...prev].slice(0, 100)); // Keep up to last 100 entries
+      
+      // Log game result to Moca Chain (non-blocking)
+      try {
+        // Ensure we have a valid bet amount
+        console.log('🔍 PLINKO: Bet amount debugging:', {
+          currentBetAmount,
+          'newBetResult.betAmount': newBetResult.betAmount,
+          'parseFloat(newBetResult.betAmount)': parseFloat(newBetResult.betAmount),
+          'parseFloat(newBetResult.betAmount) > 0': parseFloat(newBetResult.betAmount) > 0
+        });
+        
+        let validBetAmount = 0.001; // Default fallback
+        
+        // Try to use newBetResult.betAmount first
+        if (newBetResult.betAmount && parseFloat(newBetResult.betAmount) > 0) {
+          validBetAmount = parseFloat(newBetResult.betAmount);
+          console.log('🔍 PLINKO: Using newBetResult.betAmount:', validBetAmount);
+        } 
+        // Fallback to currentBetAmount if it's valid
+        else if (currentBetAmount && parseFloat(currentBetAmount) > 0) {
+          validBetAmount = parseFloat(currentBetAmount);
+          console.log('🔍 PLINKO: Using currentBetAmount:', validBetAmount);
+        }
+        
+        console.log('🔍 PLINKO: Final validBetAmount:', validBetAmount);
+        
+        const gameData = {
+          player: walletAddress || '0x0000000000000000000000000000000000000000',
+          gameType: 'PLINKO',
+          gameSubType: currentRiskLevel.toLowerCase(),
+          betAmount: validBetAmount.toString(),
+          won: enhancedBetResult.payout > 0,
+          winAmount: enhancedBetResult.payout.toString(),
+          multiplier: enhancedBetResult.multiplier.toString(),
+          entropyTxHash: randomData.entropyProof?.transactionHash,
+          entropySequenceNumber: randomData.entropyProof?.sequenceNumber || 0,
+          randomValue: randomData.randomValue,
+          gameData: JSON.stringify({
+            rows: currentRows,
+            riskLevel: currentRiskLevel,
+            ballPath: enhancedBetResult.ballPath,
+            finalSlot: enhancedBetResult.finalSlot
+          })
+        };
+
+        console.log('🎮 PLINKO: Attempting to log to Moca Chain via API...', {
+          player: walletAddress || '0x0000000000000000000000000000000000000000',
+          gameType: 'PLINKO',
+          gameSubType: currentRiskLevel.toLowerCase(),
+          betAmount: validBetAmount.toString(),
+          won: enhancedBetResult.payout > 0,
+          winAmount: enhancedBetResult.payout.toString(),
+          multiplier: enhancedBetResult.multiplier.toString()
+        });
+        
+        try {
+          const response = await fetch('/api/game-history', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(gameData)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ PLINKO: HTTP error:', response.status, errorText);
+            return;
+          }
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('✅ PLINKO: Game logged to Moca Chain successfully!');
+            console.log('🆔 Game ID:', result.gameId);
+            console.log('🔗 Moca TX:', result.transactionHash);
+            console.log('🌐 Explorer:', result.mocaExplorerUrl);
+            
+            // Update history with Moca log info
+            setGameHistory(prev => prev.map(item => 
+              item.id === enhancedBetResult.id 
+                ? {
+                    ...item,
+                    mocaLogTx: result.transactionHash,
+                    mocaGameId: result.gameId,
+                    mocaExplorerUrl: result.mocaExplorerUrl
+                  }
+                : item
+            ));
+          } else {
+            console.error('❌ PLINKO: Failed to log to Moca Chain:', result.error);
+          }
+        } catch (error) {
+          console.error('❌ PLINKO: Moca logging error:', error.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ PLINKO: Moca logging setup error:', error.message);
+      }
       
     } catch (error) {
       console.error('❌ Error using Yellow Network for Plinko game:', error);

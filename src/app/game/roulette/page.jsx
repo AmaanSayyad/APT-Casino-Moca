@@ -954,6 +954,13 @@ const BettingStats = ({ history }) => {
 // Roulette Header Component moved inside the main component
 
 export default function GameRoulette() {
+  // Helper function to get number color (defined early for scope access)
+  const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+  const getNumberColor = (num) => {
+    if (num === 0) return 'green';
+    return redNumbers.includes(num) ? 'red' : 'black';
+  };
+
   // Add a ref for scrolling past navbar
   const contentRef = useRef(null);
 
@@ -2040,25 +2047,87 @@ export default function GameRoulette() {
             return updatedHistory;
           });
           
-          // Fire-and-forget explorer log via casino wallet
+          // Log game result to Moca Chain (non-blocking)
           try {
-            fetch('/api/casino-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: entropyResult.entropyProof.requestId || `roulette_${Date.now()}`,
-                gameType: 'ROULETTE',
-                channelId: entropyResult.entropyProof.requestId || 'entropy_channel',
-                valueMon: 0
+            const gameData = {
+              player: address || '0x0000000000000000000000000000000000000000',
+              gameType: 'ROULETTE',
+              gameSubType: winningBets.length > 1 ? `multiple-${winningBets.length}` : (winningBets[0]?.name || 'unknown'),
+              betAmount: totalBetAmount.toString(),
+              won: netResult > 0,
+              winAmount: netResult > 0 ? netResult.toString() : '0',
+              multiplier: netResult > 0 ? (netResult / totalBetAmount).toString() : '0',
+              entropyTxHash: entropyResult.entropyProof?.transactionHash,
+              entropySequenceNumber: entropyResult.entropyProof?.sequenceNumber || 0,
+              randomValue: entropyResult.randomValue,
+              gameData: JSON.stringify({
+                winningNumber: winningNumber,
+                winningColor: getNumberColor(winningNumber),
+                totalBets: winningBets.length + losingBets.length,
+                winningBets: winningBets.map(bet => ({ name: bet.name, amount: bet.amount, multiplier: bet.multiplier })),
+                losingBets: losingBets.map(bet => ({ name: bet.name, amount: bet.amount }))
               })
-            })
-              .then(async (r) => {
-                const t = await r.text().catch(() => '');
-                console.log('🎰 Casino session log (Roulette):', r.status, t);
-              })
-              .catch((e) => console.warn('Casino session log failed (Roulette):', e));
-          } catch (e) {
-            console.warn('Casino session log threw (Roulette):', e);
+            };
+
+            // Log to Moca Chain via API (non-blocking)
+            const logToMocaChain = async () => {
+              try {
+                console.log('🎮 ROULETTE: Attempting to log to Moca Chain via API...', gameData);
+                
+                const response = await fetch('/api/game-history', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(gameData)
+                });
+                
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  console.error('❌ ROULETTE: HTTP error:', response.status, errorText);
+                  return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                  console.log('✅ ROULETTE: Game logged to Moca Chain successfully!');
+                  console.log('🆔 Game ID:', result.gameId);
+                  console.log('🔗 Moca TX:', result.transactionHash);
+                  console.log('🌐 Explorer:', result.mocaExplorerUrl);
+                  
+                  // Update history with Moca log info
+                  setBettingHistory(prev => prev.map(item => 
+                    item.id === newBet.id 
+                      ? {
+                          ...item,
+                          mocaLogTx: result.transactionHash,
+                          mocaGameId: result.gameId,
+                          mocaExplorerUrl: result.mocaExplorerUrl
+                        }
+                      : item
+                  ));
+                } else {
+                  console.error('❌ ROULETTE: Failed to log to Moca Chain:', result.error);
+                }
+              } catch (error) {
+                console.error('❌ ROULETTE: Moca logging error:', error.message);
+              }
+            };
+            
+            // Execute logging in background
+            console.log('🎮 ROULETTE: Starting Moca logging process...');
+            console.log('🎮 ROULETTE: newBet.id:', newBet.id);
+            console.log('🎮 ROULETTE: address:', address);
+            console.log('🎮 ROULETTE: winningNumber:', winningNumber);
+            console.log('🎮 ROULETTE: getNumberColor(winningNumber):', getNumberColor(winningNumber));
+            console.log('🎮 ROULETTE: gameData:', gameData);
+            
+            logToMocaChain().catch(error => {
+              console.error('❌ ROULETTE: Background Moca logging failed:', error);
+            });
+          } catch (error) {
+            console.warn('⚠️ ROULETTE: Moca logging setup error:', error.message);
           }
           
           // Pyth Entropy handles randomness generation

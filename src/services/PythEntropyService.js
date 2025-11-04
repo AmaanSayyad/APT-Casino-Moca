@@ -98,16 +98,16 @@ class PythEntropyService {
   }
 
   /**
-   * Generate a random number using Pyth Entropy via API
+   * Generate a random number using Pyth Entropy via API (server-side)
    * @param {string} gameType - Type of game (MINES, PLINKO, ROULETTE, WHEEL)
    * @param {Object} gameConfig - Game configuration
    * @returns {Promise<Object>} Random number result with proof
    */
   async generateRandom(gameType, gameConfig = {}) {
     try {
-      console.log(`🎲 PYTH ENTROPY: Generating random for ${gameType} via API...`);
+      console.log(`🎲 PYTH ENTROPY: Generating random for ${gameType} via API (Pyth Direct)...`);
       
-      // Call the API endpoint to generate entropy using hardhat script
+      // Call the API endpoint to generate entropy using Pyth directly
       const response = await fetch('/api/generate-entropy', {
         method: 'POST',
         headers: {
@@ -115,7 +115,8 @@ class PythEntropyService {
         },
         body: JSON.stringify({
           gameType: gameType,
-          gameConfig: gameConfig
+          gameConfig: gameConfig,
+          usePythDirect: true // Flag to use Pyth directly instead of casino contract
         })
       });
       
@@ -132,7 +133,7 @@ class PythEntropyService {
         throw new Error(result.error || 'Failed to generate entropy via API');
       }
       
-      console.log('✅ PYTH ENTROPY: Random value generated via API');
+      console.log('✅ PYTH ENTROPY: Random value generated via API (Pyth Direct)');
       console.log('🔗 Transaction:', result.entropyProof.transactionHash);
       console.log('🎲 Random value:', result.randomValue);
       
@@ -143,9 +144,9 @@ class PythEntropyService {
         gameType: gameType,
         gameConfig: gameConfig,
         metadata: {
-          source: 'Pyth Entropy (API)',
+          source: 'Pyth Entropy (API Direct)',
           network: 'arbitrum-sepolia',
-          algorithm: 'pyth-entropy-arbitrum',
+          algorithm: 'pyth-entropy-direct',
           generatedAt: new Date().toISOString()
         }
       };
@@ -172,10 +173,10 @@ class PythEntropyService {
           blockNumber: null,
           randomValue: Math.floor(Math.random() * 1000000),
           network: 'arbitrum-sepolia',
-          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia',
+          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=fallback',
           arbitrumExplorerUrl: 'https://sepolia.arbiscan.io/',
           timestamp: Date.now(),
-          source: 'Pyth Entropy (API Fallback)'
+          source: 'Pyth Entropy (Fallback)'
         },
         success: true,
         gameType: gameType,

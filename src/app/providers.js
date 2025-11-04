@@ -108,7 +108,7 @@ export default function Providers({ children }) {
   console.log('🔧 Providers mounting...');
   console.log('🔧 Project ID: 226b43b703188d269fb70d02c107c34e');
 
-  // RainbowKit configuration for Moca Chain Testnet
+  // RainbowKit configuration for Monad Testnet
   let config;
   
   try {
@@ -129,26 +129,21 @@ export default function Providers({ children }) {
         wallets: [
           metaMaskWallet({
             projectId: '226b43b703188d269fb70d02c107c34e',
+            // Enable Smart Accounts support
+            options: {
+              enableSmartAccounts: true,
+            }
           }),
-          walletConnectWallet({
-            projectId: '226b43b703188d269fb70d02c107c34e',
-          }),
-          injectedWallet({}),
+          walletConnectWallet,
+          injectedWallet,
         ],
       },
       {
         groupName: 'Other',
         wallets: [
-          rainbowWallet({
-            projectId: '226b43b703188d269fb70d02c107c34e',
-          }),
-          coinbaseWallet({
-            appName: 'APT Casino Moca',
-            projectId: '226b43b703188d269fb70d02c107c34e',
-          }),
-          trustWallet({
-            projectId: '226b43b703188d269fb70d02c107c34e',
-          }),
+          rainbowWallet,
+          coinbaseWallet,
+          trustWallet,
         ],
       },
     ], {
