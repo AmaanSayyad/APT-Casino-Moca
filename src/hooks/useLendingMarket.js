@@ -6,7 +6,7 @@ const MOCK_LENDING_DATA = {
   userDeposits: [
     {
       symbol: 'MON',
-      name: 'Monad Network Coin',
+      name: 'Moca Network Coin',
       amount: '25.5',
       apy: '8.2',
       iconColor: '#F1324D'
@@ -22,7 +22,7 @@ const MOCK_LENDING_DATA = {
   userBorrows: [
     {
       symbol: 'MON',
-      name: 'Monad Network Coin',
+      name: 'Moca Network Coin',
       amount: '5.0',
       apy: '15.2',
       iconColor: '#F1324D'

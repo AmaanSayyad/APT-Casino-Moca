@@ -37,7 +37,7 @@ const GameHistoryCard = ({ game, gameType }) => {
   };
 
   const openTransaction = (txHash, logIndex) => {
-    const network = process.env.NEXT_PUBLIC_NETWORK || 'monad-testnet';
+    const network = process.env.NEXT_PUBLIC_NETWORK || 'moca-testnet';
     let explorerUrl;
     
     if (network === 'monad-testnet') {

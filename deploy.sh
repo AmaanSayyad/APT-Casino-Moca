@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# APT Casino Monad Deployment Script
-# This script deploys the entire casino application to Monad testnet and Vercel
+# APT Casino Moca Deployment Script
+# This script deploys the entire casino application to Moca testnet and Vercel
 
 set -e
 

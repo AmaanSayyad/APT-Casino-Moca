@@ -1,28 +1,28 @@
-// Network utilities for Monad Testnet
-import { monadTestnet } from '@/config/chains';
+// Network utilities for Moca Testnet
+import { mocaTestnet } from '@/config/chains';
 
-export const MONAD_TESTNET_CONFIG = {
+export const MOCA_TESTNET_CONFIG = {
   chainId: '0x279f', // 10143 in hex
-  chainName: 'Monad Testnet',
+  chainName: 'Moca Testnet',
   nativeCurrency: {
-    name: 'Monad',
+    name: 'Moca',
     symbol: 'MOCA',
     decimals: 18,
   },
-  rpcUrls: ['https://testnet-rpc.monad.xyz'],
-  blockExplorerUrls: ['https://testnet.monadexplorer.com'],
+  rpcUrls: ['https://testnet-rpc.moca.network'],
+  blockExplorerUrls: ['https://testnet-scan.moca.network'],
 };
 
-export const switchToMonadTestnet = async () => {
+export const switchToMocaTestnet = async () => {
   if (!window.ethereum) {
     throw new Error('MetaMask is not installed');
   }
 
   try {
-    // Try to switch to Monad Testnet
+    // Try to switch to Moca Testnet
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: MONAD_TESTNET_CONFIG.chainId }],
+      params: [{ chainId: MOCA_TESTNET_CONFIG.chainId }],
     });
   } catch (switchError) {
     // If the chain is not added, add it
@@ -30,26 +30,26 @@ export const switchToMonadTestnet = async () => {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [MONAD_TESTNET_CONFIG],
+          params: [MOCA_TESTNET_CONFIG],
         });
       } catch (addError) {
-        throw new Error('Failed to add Monad Testnet to MetaMask');
+        throw new Error('Failed to add Moca Testnet to MetaMask');
       }
     } else {
-      throw new Error('Failed to switch to Monad Testnet');
+      throw new Error('Failed to switch to Moca Testnet');
     }
   }
 };
 
-export const isMonadTestnet = (chainId) => {
+export const isMocaTestnet = (chainId) => {
   return chainId === 10143 || chainId === '0x279f';
 };
 
-export const formatMonBalance = (balance, decimals = 5) => {
+export const formatMocaBalance = (balance, decimals = 5) => {
   const numBalance = parseFloat(balance || '0');
   return `${numBalance.toFixed(decimals)} MOCA`;
 };
 
-export const getMonadTestnetExplorerUrl = (txHash) => {
-  return `https://testnet.monadexplorer.com/tx/${txHash}`;
+export const getMocaTestnetExplorerUrl = (txHash) => {
+  return `https://testnet-scan.moca.network/tx/${txHash}`;
 };

@@ -1,4 +1,4 @@
-# APT Casino Monad - Mermaid Architecture Diagrams
+# APT Casino Moca - Mermaid Architecture Diagrams
 
 ## 🏗️ System Architecture Overview
 
@@ -25,8 +25,8 @@ graph TB
         I --> SAA[Smart Account API]
     end
     
-    subgraph Gaming["Gaming Network - Monad Testnet"]
-        MT[Monad Testnet] --> MON[MON Token]
+    subgraph Gaming["Gaming Network - Moca Testnet"]
+        MT[Moca Testnet] --> MOCA[MOCA Token]
         MT --> DEP[Deposits/Withdrawals]
         MT --> SA_BATCH[Batch Transactions]
     end
@@ -96,8 +96,8 @@ flowchart TD
     I --> K
     
     K --> L{Network Check}
-    L -->|Monad Testnet| M[Connection Success]
-    L -->|Wrong Network| N[Switch to Monad Testnet]
+    L -->|Moca Testnet| M[Connection Success]
+    L -->|Wrong Network| N[Switch to Moca Testnet]
     
     N --> O{User Approves?}
     O -->|Yes| M
@@ -159,7 +159,7 @@ graph TB
     end
 ```
 
-## �  Multi-Network Architecture (Monad + Arbitrum)
+## 🌐 Multi-Network Architecture (Moca + Arbitrum)
 
 ```mermaid
 graph TB
@@ -174,9 +174,9 @@ graph TB
         NS --> GM[Game Manager]
     end
     
-    subgraph MonadNet["Monad Testnet (Chain ID: 10143)"]
-        MT[Monad Testnet] --> MON[MON Token]
-        MON --> DEP[Deposit Contract]
+    subgraph MocaNet["Moca Testnet (Chain ID: 10143)"]
+        MT[Moca Testnet] --> MOCA[MOCA Token]
+        MOCA --> DEP[Deposit Contract]
         MOCA --> WITH[Withdraw Contract]
         DEP --> TB[Treasury Balance]
         WITH --> TB
@@ -247,7 +247,7 @@ sequenceDiagram
     participant U as User
     participant SA as Smart Account
     participant UI as Game UI
-    participant MT as Monad Testnet
+    participant MT as Moca Testnet
     participant API as API Route
     participant SC as Smart Contract (Arbitrum)
     participant PE as Pyth Entropy
@@ -660,7 +660,7 @@ sequenceDiagram
     participant U as User
     participant UI as Casino UI
     participant SA as Smart Account
-    participant MT as Monad Testnet
+    participant MT as Moca Testnet
     participant AS as Arbitrum Sepolia
     participant PE as Pyth Entropy
     
@@ -670,7 +670,7 @@ sequenceDiagram
     UI->>SA: Prepare Batch Transaction
     
     rect rgb(200, 255, 200)
-        Note over SA,MT: Batch Transaction on Monad
+        Note over SA,MT: Batch Transaction on Moca
         SA->>MT: Batch Bet Transaction
         MT->>SA: Confirm All Bets
     end
@@ -684,7 +684,7 @@ sequenceDiagram
     end
     
     rect rgb(255, 200, 200)
-        Note over SA,MT: Batch Payout on Monad
+        Note over SA,MT: Batch Payout on Moca
         UI->>SA: Process Batch Payouts
         SA->>MT: Batch Payout Transaction
         MT->>SA: Confirm All Payouts

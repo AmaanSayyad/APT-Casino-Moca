@@ -62,11 +62,11 @@ export const PYTH_ENTROPY_CONFIG = {
   EXPLORER_CONFIG: {
     baseUrl: 'https://entropy-explorer.pyth.network',
     // Supported chains for explorer
-    supportedChains: ['monad-testnet'],
+    supportedChains: ['moca-testnet'],
     // Transaction link format
     transactionLinkFormat: 'https://entropy-explorer.pyth.network/tx/{txHash}',
-    // Monad Testnet specific explorer
-    monadTestnetUrl: 'https://entropy-explorer.pyth.network/?chain=monad-testnet&search='
+    // Moca Testnet specific explorer
+    mocaTestnetUrl: 'https://entropy-explorer.pyth.network/?chain=moca-testnet&search='
   },
 
   /**

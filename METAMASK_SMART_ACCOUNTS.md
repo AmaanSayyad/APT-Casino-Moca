@@ -204,7 +204,7 @@ Smart Accounts on MetaMask Mobile:
 
 - [MetaMask Smart Accounts Documentation](https://docs.metamask.io/wallet/concepts/smart-accounts/)
 - [EIP-4337 Account Abstraction](https://eips.ethereum.org/EIPS/eip-4337)
-- [Monad Network Documentation](https://docs.monad.xyz/)
+- [Moca Network Documentation](https://docs.moca.network/)
 
 ---
 
