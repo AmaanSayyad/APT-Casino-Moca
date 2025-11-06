@@ -108,7 +108,7 @@ export default function Providers({ children }) {
   console.log('🔧 Providers mounting...');
   console.log('🔧 Project ID: 226b43b703188d269fb70d02c107c34e');
 
-  // RainbowKit configuration for Monad Testnet
+  // RainbowKit configuration for Moca Testnet
   let config;
   
   try {

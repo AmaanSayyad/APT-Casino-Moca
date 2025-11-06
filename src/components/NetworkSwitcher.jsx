@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAccount, useChainId, useSwitchChain } from 'wagmi';
-import { switchToMonadTestnet, isMonadTestnet, MONAD_TESTNET_CONFIG } from '@/utils/networkUtils';
+import { switchToMocaTestnet, isMocaTestnet, MOCA_TESTNET_CONFIG } from '@/utils/networkUtils';
 
 const NetworkSwitcher = () => {
   const { isConnected } = useAccount();
@@ -13,7 +13,7 @@ const NetworkSwitcher = () => {
 
   useEffect(() => {
     if (isConnected && chainId) {
-      setIsWrongNetwork(!isMonadTestnet(chainId));
+      setIsWrongNetwork(!isMocaTestnet(chainId));
     }
   }, [isConnected, chainId]);
 
@@ -29,15 +29,15 @@ const NetworkSwitcher = () => {
         } catch (wagmiError) {
           console.log('Wagmi switch failed, trying manual method:', wagmiError);
           // If wagmi fails, try manual MetaMask method
-          await switchToMonadTestnet();
+          await switchToMocaTestnet();
         }
       } else {
         // Fallback to manual method
-        await switchToMonadTestnet();
+        await switchToMocaTestnet();
       }
     } catch (error) {
       console.error('Failed to switch network:', error);
-      alert('Failed to switch to Monad Testnet. Please add it manually in MetaMask.');
+      alert('Failed to switch to Moca Testnet. Please add it manually in MetaMask.');
     } finally {
       setIsSwitching(false);
     }
@@ -53,7 +53,7 @@ const NetworkSwitcher = () => {
         <div className="flex items-center space-x-4">
           <div className="flex-1">
             <p className="font-medium">Wrong Network</p>
-            <p className="text-sm text-red-200">Please switch to Monad Testnet to use this app</p>
+            <p className="text-sm text-red-200">Please switch to Moca Testnet to use this app</p>
           </div>
           <button
             onClick={handleSwitchNetwork}
