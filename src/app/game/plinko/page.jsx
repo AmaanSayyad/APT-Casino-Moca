@@ -16,6 +16,8 @@ import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
 import { FaPercentage, FaBalanceScale, FaChartLine, FaCoins, FaTrophy, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
 import pythEntropyService from '../../../services/PythEntropyService';
 import { useGameHistory } from '@/hooks/useGameHistory';
+import { useAIRRewards } from '@/hooks/useAIRRewards';
+import AIRRewardsNotification from '@/components/MocaAIR/AIRRewardsNotification';
 
 export default function Plinko() {
   const userBalance = useSelector((state) => state.balance.userBalance);
@@ -29,6 +31,15 @@ export default function Plinko() {
 
   // Game history hook for MOCA logging
   const { savePlinkoGame } = useGameHistory();
+
+  // AIR Rewards
+  const {
+    currentRewards,
+    showNotification,
+    showRewards,
+    hideRewards,
+    extractRewards
+  } = useAIRRewards();
 
   const plinkoGameRef = useRef(null);
 
@@ -246,6 +257,13 @@ export default function Plinko() {
         
         console.log('💾 Plinko saved to history (triggers MOCA):', saveResult);
         
+        // Show AIR Rewards if available
+        const rewards = extractRewards(saveResult);
+        if (rewards) {
+          console.log('🎁 AIR Rewards earned:', rewards);
+          showRewards(rewards);
+        }
+        
         // Update game history with MOCA network log info
         if (saveResult && saveResult.mocaNetworkLog) {
           setGameHistory(prev => {
@@ -292,6 +310,15 @@ export default function Plinko() {
 
   return (
     <div className="min-h-screen bg-[#070005] text-white game-page-container">
+      {/* AIR Rewards Notification */}
+      {showNotification && currentRewards && (
+        <AIRRewardsNotification
+          rewards={currentRewards}
+          onClose={hideRewards}
+          autoClose={5000}
+        />
+      )}
+
       {showMobileWarning && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 px-4">
           <div className="bg-[#1A0015] border border-[#333947] rounded-xl p-6 max-w-md w-full text-center">

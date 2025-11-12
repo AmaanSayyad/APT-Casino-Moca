@@ -26,6 +26,8 @@ import AIAutoBetting from "./components/AIAutoBetting";
 import AISettingsModal from "./components/AISettingsModal";
 import pythEntropyService from '@/services/PythEntropyService';
 import { useGameHistory } from '@/hooks/useGameHistory';
+import { useAIRRewards } from '@/hooks/useAIRRewards';
+import AIRRewardsNotification from '@/components/MocaAIR/AIRRewardsNotification';
 
 export default function Mines() {
   // Game State
@@ -39,6 +41,15 @@ export default function Mines() {
   
   // Game history hook for MOCA logging
   const { saveMinesGame } = useGameHistory();
+
+  // AIR Rewards
+  const {
+    currentRewards,
+    showNotification,
+    showRewards,
+    hideRewards,
+    extractRewards
+  } = useAIRRewards();
   
   // AI Auto Betting State
   const [isAIActive, setIsAIActive] = useState(false);
@@ -251,6 +262,13 @@ export default function Mines() {
       });
       
       console.log('💾 Mines saved to history (triggers MOCA):', saveResult);
+      
+      // Show AIR Rewards if available
+      const rewards = extractRewards(saveResult);
+      if (rewards) {
+        console.log('🎁 AIR Rewards earned:', rewards);
+        showRewards(rewards);
+      }
       
       // Update game history with MOCA network log info
       if (saveResult && saveResult.mocaNetworkLog) {
@@ -911,6 +929,15 @@ export default function Mines() {
 
   return (
     <div className="min-h-screen bg-[#070005] bg-gradient-to-b from-[#070005] to-[#0e0512] pb-20 text-white mines-bg custom-scrollbar">
+      {/* AIR Rewards Notification */}
+      {showNotification && currentRewards && (
+        <AIRRewardsNotification
+          rewards={currentRewards}
+          onClose={hideRewards}
+          autoClose={5000}
+        />
+      )}
+
       <div className="pt-16">
         {renderHeader()}
         {renderMainContent()}

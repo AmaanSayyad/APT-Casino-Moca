@@ -21,6 +21,8 @@ import useWalletStatus from '@/hooks/useWalletStatus';
 // import vrfLogger from '@/services/VRFLoggingService';
 import pythEntropyService from '@/services/PythEntropyService';
 import { useGameHistory } from '@/hooks/useGameHistory';
+import { useAIRRewards } from '@/hooks/useAIRRewards';
+import AIRRewardsNotification from '@/components/MocaAIR/AIRRewardsNotification';
 
 // Import new components
 import WheelVideo from "./components/WheelVideo";
@@ -41,6 +43,16 @@ export default function Home() {
   
   // Game history hook for MOCA logging
   const { saveWheelGame } = useGameHistory();
+
+  // AIR Rewards
+  const {
+    currentRewards,
+    showNotification,
+    showRewards,
+    hideRewards,
+    extractRewards
+  } = useAIRRewards();
+
   const [showVRFModal, setShowVRFModal] = useState(false);
   const [targetMultiplier, setTargetMultiplier] = useState(null);
   const [wheelPosition, setWheelPosition] = useState(0);
@@ -237,6 +249,13 @@ export default function Home() {
                 console.log('💾 Wheel saved to history (triggers MOCA):', saveResult);
                 console.log('🔍 MOCA Network Log:', saveResult?.mocaNetworkLog);
                 console.log('🔍 Transaction Hash:', saveResult?.mocaNetworkLog?.transactionHash);
+                
+                // Show AIR Rewards if available
+                const rewards = extractRewards(saveResult);
+                if (rewards) {
+                  console.log('🎁 AIR Rewards earned:', rewards);
+                  showRewards(rewards);
+                }
                 
                 // Update game history with MOCA network log info
                 if (saveResult) {
@@ -670,6 +689,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#070005] text-white pb-20 game-page-container">
+      {/* AIR Rewards Notification */}
+      {showNotification && currentRewards && (
+        <AIRRewardsNotification
+          rewards={currentRewards}
+          onClose={hideRewards}
+          autoClose={5000}
+        />
+      )}
+
       {/* Header */}
       {renderHeader()}
 

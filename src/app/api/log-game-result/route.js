@@ -1,4 +1,5 @@
 import gameResultLogger from '../../../services/GameResultLogger.js';
+import mocaAIRService from '../../../services/MocaAIRService.js';
 
 export async function POST(request) {
   try {
@@ -27,12 +28,41 @@ export async function POST(request) {
       // Create enhanced game history entry
       const enhancedEntry = gameResultLogger.createEnhancedGameHistoryEntry(gameData, result);
       
+      // Moca AIR Integration: Track activity and calculate rewards
+      let mocaAIRRewards = null;
+      if (process.env.NEXT_PUBLIC_ENABLE_MOCA_AIR === 'true') {
+        try {
+          // Track game activity and calculate rewards
+          const activityResult = await mocaAIRService.trackActivity(
+            gameData.player,
+            {
+              gameType: gameData.gameType,
+              betAmount: gameData.betAmount,
+              won: gameData.won,
+              winAmount: gameData.winAmount
+            }
+          );
+          
+          if (activityResult.success) {
+            mocaAIRRewards = activityResult.rewards;
+            console.log('🎁 Moca AIR rewards calculated:', mocaAIRRewards);
+            console.log(`   💰 AIR Reward: ${mocaAIRRewards.airReward}`);
+            console.log(`   ⭐ Realm Points: ${mocaAIRRewards.realmPoints}`);
+            console.log(`   🎯 Multiplier: ${mocaAIRRewards.multiplier}x`);
+          }
+        } catch (error) {
+          console.error('⚠️ Moca AIR tracking error:', error);
+          // Don't fail the main transaction if rewards fail
+        }
+      }
+      
       return Response.json({
         success: true,
         gameId: result.gameId,
         mocaTransactionHash: result.mocaTransactionHash,
         mocaExplorerUrl: result.mocaExplorerUrl,
-        enhancedGameEntry: enhancedEntry
+        enhancedGameEntry: enhancedEntry,
+        mocaAIRRewards: mocaAIRRewards
       });
     } else {
       console.error('❌ API: Failed to log game result:', result.error);

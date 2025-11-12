@@ -36,6 +36,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 import pythEntropyService from '@/services/PythEntropyService';
 import { useGameHistory } from '@/hooks/useGameHistory';
+import { useAIRRewards } from '@/hooks/useAIRRewards';
+import AIRRewardsNotification from '@/components/MocaAIR/AIRRewardsNotification';
 
 // Ethereum client functions will be added here when needed
 
@@ -1205,6 +1207,15 @@ export default function GameRoulette() {
   const { address, isConnected } = useAccount();
   const account = { address };
   const connected = isConnected;
+
+  // AIR Rewards
+  const {
+    currentRewards,
+    showNotification,
+    showRewards,
+    hideRewards,
+    extractRewards
+  } = useAIRRewards();
   const isWalletReady = isConnected && address;
   const [realBalance, setRealBalance] = useState('0');
   const { balance } = useToken(address); // Keep for compatibility
@@ -2081,6 +2092,13 @@ export default function GameRoulette() {
               console.log('🔍 MOCA Network Log:', saveResult?.mocaNetworkLog);
               console.log('🔍 Transaction Hash:', saveResult?.mocaNetworkLog?.transactionHash);
               
+              // Show AIR Rewards if available
+              const rewards = extractRewards(saveResult);
+              if (rewards) {
+                console.log('🎁 AIR Rewards earned:', rewards);
+                showRewards(rewards);
+              }
+              
               // Update the betting history with MOCA network log info
               if (saveResult) {
                 const mocaTxHash = saveResult.mocaNetworkLog?.transactionHash || saveResult.mocaNetworkLog?.transactionHash;
@@ -2601,6 +2619,15 @@ export default function GameRoulette() {
   return (
     <ThemeProvider theme={theme}>
       <div ref={contentRef} className="font-sans" style={{ backgroundColor: "#080005", minHeight: "100vh", overflowX: 'hidden', paddingTop: "30px" }}>
+        {/* AIR Rewards Notification */}
+        {showNotification && currentRewards && (
+          <AIRRewardsNotification
+            rewards={currentRewards}
+            onClose={hideRewards}
+            autoClose={5000}
+          />
+        )}
+
         {/* Audio elements */}
         <audio ref={spinSoundRef} src="/sounds/ball-spin.mp3" preload="auto" />
         <audio ref={winSoundRef} src="/sounds/win-chips.mp3" preload="auto" />
@@ -3679,6 +3706,15 @@ export default function GameRoulette() {
         </Snackbar>
 
         {/* Pyth Entropy handles randomness generation */}
+
+        {/* AIR Rewards Notification */}
+        {showNotification && currentRewards && (
+          <AIRRewardsNotification
+            rewards={currentRewards}
+            onClose={hideRewards}
+            autoClose={5000}
+          />
+        )}
 
       </div>
     </ThemeProvider>
